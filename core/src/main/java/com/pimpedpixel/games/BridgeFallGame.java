@@ -14,16 +14,10 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.dongbat.jbump.Item;
+// Import the new JbumpItemComponent
 import com.pimpedpixel.games.assets.AssetLoadingImpl;
-import com.pimpedpixel.games.systems.characters.CharacterMovementSystem;
-import com.pimpedpixel.games.systems.characters.CharacterRenderSystem;
-import com.pimpedpixel.games.systems.characters.Direction;
-import com.pimpedpixel.games.systems.characters.HarryAnimationComponent;
-import com.pimpedpixel.games.systems.characters.HarryAnimationsFactory;
-import com.pimpedpixel.games.systems.characters.HarryState;
-import com.pimpedpixel.games.systems.characters.HarryStateComponent;
-import com.pimpedpixel.games.systems.characters.PhysicsComponent;
-import com.pimpedpixel.games.systems.characters.TransformComponent;
+import com.pimpedpixel.games.systems.characters.*;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
@@ -43,6 +37,14 @@ public class BridgeFallGame extends ApplicationAdapter {
     private GameInfo gameInfo;
     private OrthogonalTiledMapRenderer mapRenderer;
     private Viewport viewport;
+
+    // --- NEW: Single Jbump World for all objects ---
+    private com.dongbat.jbump.World<Object> jbumpWorld;
+
+    // Harry's bounding box size
+    // TODO Get the character width and height and multiply with asset scale
+    private static final float HARRY_WIDTH = 64f; // Adjust these based on your art
+    private static final float HARRY_HEIGHT = 64f;
 
     @Override
     public void create() {
@@ -64,29 +66,36 @@ public class BridgeFallGame extends ApplicationAdapter {
         stage = new Stage(viewport, spriteBatch);
 
         // --- Load tilemap & create renderer BEFORE world config ---
-        TiledMap tileMap = loadBridgeFallMap();
+        final TiledMap tileMap = loadBridgeFallMap();
         if (tileMap == null) {
-            // If something goes wrong, better to bail early
             Gdx.app.error("BridgeFallGame", "Failed to load bridgefall_1 TMX");
+            return; // Exit on failure
         }
         mapRenderer = new OrthogonalTiledMapRenderer(tileMap, ASSET_SCALE, spriteBatch);
+
+        // --- NEW: Initialize the single Jbump World ---
+        jbumpWorld = new com.dongbat.jbump.World<>();
 
         // --- ECS world config ---
         WorldConfiguration config = new WorldConfigurationBuilder()
             .with(
-                // 1. Background layers (everything *behind* Harry)
-                //    change "Background" to your actual background layer name(s) if needed.
+                // 1. Background layers
                 new MapBackgroundRenderSystem(
                     mapRenderer,
                     camera,
-                    "platform" // <-- adjust if your map uses another name, or remove if not needed
+                    "platform"
                 ),
 
-                // 2. Character movement & rendering
-                new CharacterMovementSystem(12 * 32f),
+                // 2. Jbump World Initialization (MUST run first to populate collision geometry)
+                // Use the single jbumpWorld instance
+                new JbumpMapInitializationSystem(tileMap, jbumpWorld,"collision"),
+
+                // 3. Character movement & rendering
+                // Use the single jbumpWorld instance
+                new CharacterMovementSystem(jbumpWorld),
                 new CharacterRenderSystem(spriteBatch, camera),
 
-                // 3. Foreground layers (in front of Harry)
+                // 4. Foreground layers
                 new MapForegroundRenderSystem(
                     mapRenderer,
                     camera,
@@ -100,7 +109,7 @@ public class BridgeFallGame extends ApplicationAdapter {
         artemisWorld = new World(config);
 
         // Create Harry entity
-        createHarry(0f, 0f);
+        createHarry(0, 700f); // Start him off the ground for testing
 
         // If you use Stage input later, you can enable it:
         // Gdx.input.setInputProcessor(stage);
@@ -113,14 +122,10 @@ public class BridgeFallGame extends ApplicationAdapter {
         final String path = gameInfo.getTmxFile("bridgefall_1").path();
 
         if (!assetManager.contains(path)) {
-            // In case AssetLoadingImpl didn't queue it for some reason, we can load it here:
-            // assetManager.load(path, TiledMap.class);
-            // assetManager.finishLoadingAsset(path);
             Gdx.app.error("BridgeFallGame", "AssetManager does not contain TMX: " + path);
             return null;
         }
 
-        // Ensure that specific asset is loaded
         assetManager.finishLoadingAsset(path);
         return assetManager.get(path, TiledMap.class);
     }
@@ -128,18 +133,34 @@ public class BridgeFallGame extends ApplicationAdapter {
     private void createHarry(float x, float y) {
         int entityId = artemisWorld.create();
 
+        // Use the entityId as the object type for dynamic items
+        Item<Integer> harryItem = new Item<>(entityId);
+
+        // 1. TRANSFORM
         TransformComponent t = artemisWorld.edit(entityId).create(TransformComponent.class);
         t.x = x;
         t.y = y;
 
+        // 2. PHYSICS
         PhysicsComponent p = artemisWorld.edit(entityId).create(PhysicsComponent.class);
         p.vx = 0;
         p.vy = 0;
-        p.onGround = true;
+        p.onGround = false; // Start false, collision loop will fix
 
+        // 3. JUMP ITEM (NEW)
+        // Add the component and initialize the Jbump Item at the starting position
+        JbumpItemComponent j = artemisWorld.edit(entityId).create(JbumpItemComponent.class);
+        j.item = harryItem;
+
+        // Add the item to the Jbump World (x, y, width, height)
+        // The type for the Item's user data is Integer, which is compatible with World<Object>
+        jbumpWorld.add((Item)harryItem, x, y, HARRY_WIDTH, HARRY_HEIGHT);
+
+
+        // 4. STATE
         HarryStateComponent s = artemisWorld.edit(entityId).create(HarryStateComponent.class);
         s.state = HarryState.RESTING;
-        s.dir = Direction.RIGHT;
+        s.dir = Direction.LEFT;
         s.stateTime = 0f;
 
         HarryAnimationComponent anim = artemisWorld.edit(entityId).create(HarryAnimationComponent.class);
