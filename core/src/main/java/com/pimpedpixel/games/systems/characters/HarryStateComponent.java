@@ -7,4 +7,5 @@ public class HarryStateComponent extends Component {
     public HarryState previousState = HarryState.RESTING; // <— add this
     public Direction dir = Direction.RIGHT;
     public float stateTime = 0f;
+    public boolean justJumped;
 }

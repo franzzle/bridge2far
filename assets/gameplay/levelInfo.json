@@ -1,0 +1,29 @@
+{
+  "levels": [
+    {
+      "levelNumber": 1,
+      "scenarios": [
+        {
+          "title": "Run Forest, Run!",
+          "timeLimit": 20,
+          "groundLayer": [1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1],
+          "topCollisionLayer": [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+          "modifiers": {
+            "iciness": 0.5,
+            "stickiness": 0.1
+          }
+        },
+        {
+          "title": "You Call That Jumping?",
+          "timeLimit": 60,
+          "groundLayer": [1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+          "topCollisionLayer": [1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+          "modifiers": {
+            "iciness": 0.2,
+            "stickiness": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}

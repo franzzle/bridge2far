@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
 
 /**
@@ -69,7 +70,7 @@ public class CharacterRenderSystem extends IteratingSystem {
         float drawY = Math.round(t.y);
 
         // Bottom-left anchor
-        batch.draw(frame, drawX, drawY, width, height);
+        batch.draw(frame, drawX - Bridge2FarGame.HARRY_OFFSET_X, drawY, width, height);
     }
 
     private Animation<TextureRegion> selectAnimation(HarryStateComponent s, HarryAnimationComponent a) {

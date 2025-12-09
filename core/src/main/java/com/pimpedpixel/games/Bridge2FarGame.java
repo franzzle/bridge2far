@@ -9,6 +9,7 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -43,8 +44,11 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
     // Harry's bounding box size
     // TODO Get the character width and height and multiply with asset scale
-    private static final float HARRY_WIDTH = 64f; // Adjust these based on your art
+    private static final float HARRY_WIDTH  = 20f;
     private static final float HARRY_HEIGHT = 64f;
+
+    public static final float HARRY_OFFSET_X = 22f * ASSET_SCALE; // <- NEW OFFSET
+
 
     @Override
     public void create() {
@@ -88,7 +92,8 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
                 // 2. Jbump World Initialization (MUST run first to populate collision geometry)
                 // Use the single jbumpWorld instance
-                new JbumpMapInitializationSystem(tileMap, jbumpWorld,"collision"),
+                new JbumpMapInitializationSystem(tileMap, jbumpWorld,
+                    "ground"),
 
                 // 3. Character movement & rendering
                 // Use the single jbumpWorld instance
@@ -99,8 +104,10 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 new MapForegroundRenderSystem(
                     mapRenderer,
                     camera,
-                    "bridge"
+                    "beams","bridge"
                 ),
+                new CollisionDebugRenderSystem(tileMap, "ground"),
+                new JbumpDebugRenderSystem(jbumpWorld,new ShapeRenderer(), camera),
                 new HarryJumpSoundSystem(),
                 new SoundSystem(new SoundManager(assetManager))
             )
@@ -154,7 +161,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
         // Add the item to the Jbump World (x, y, width, height)
         // The type for the Item's user data is Integer, which is compatible with World<Object>
-        jbumpWorld.add((Item)harryItem, x, y, HARRY_WIDTH, HARRY_HEIGHT);
+        jbumpWorld.add((Item)harryItem, x +HARRY_OFFSET_X , y, HARRY_WIDTH, HARRY_HEIGHT);
 
 
         // 4. STATE

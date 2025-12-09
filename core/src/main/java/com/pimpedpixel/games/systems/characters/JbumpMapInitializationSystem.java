@@ -8,95 +8,123 @@ import com.badlogic.gdx.maps.tiled.TiledMapTile;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.dongbat.jbump.Item;
 import com.dongbat.jbump.World;
-import com.pimpedpixel.games.DesignResolution; // Assuming ASSET_SCALE is here
+import com.pimpedpixel.games.DesignResolution;
 
 /**
- * Initializes the Jbump World by mapping cells from the TiledMap
- * collision layer into static Jbump Items, applying the ASSET_SCALE.
+ * Builds all static Jbump collision geometry from the Tiled map.
+ * Collision is determined by TILE PROPERTY: collision = true
+ * (added inside the .tsx file, not the GUI if disabled).
  */
 public class JbumpMapInitializationSystem extends BaseSystem {
 
     private final TiledMap map;
-    private final World<Object> jbumpWorld; // Using World<Object> for compatibility
-    private final String collisionLayerName;
+    private final World<Object> jbumpWorld;
+    private final String groundLayerName;
 
-    // The GID (Global Tile ID) that represents your collision tile (600 in your CSV data)
-    private static final int COLLISION_GID = 600;
-
-    // Identifier for static geometry items
     private static final String STATIC_ITEM_IDENTIFIER = "MAP_COLLISION";
-
-    // Retrieve the scale factor used in rendering
     private static final float SCALE = DesignResolution.ASSET_SCALE;
 
-    public JbumpMapInitializationSystem(TiledMap map,
-                                        World<Object> jbumpWorld, // Changed to Object
-                                        String collisionLayerName) {
+    public JbumpMapInitializationSystem(
+        TiledMap map,
+        World<Object> jbumpWorld,
+        String groundLayerName
+    ) {
         this.map = map;
         this.jbumpWorld = jbumpWorld;
-        this.collisionLayerName = collisionLayerName;
+        this.groundLayerName = groundLayerName;
     }
 
     @Override
     protected void initialize() {
-        Gdx.app.log("JbumpMapInitializationSystem", "Starting map collision setup...");
+
+        Gdx.app.log("JbumpMapInitializationSystem",
+            "Starting collision map build...");
 
         MapLayers layers = map.getLayers();
-        TiledMapTileLayer collisionLayer = (TiledMapTileLayer) layers.get(collisionLayerName);
 
-        if (collisionLayer == null) {
+        TiledMapTileLayer ground = (TiledMapTileLayer) layers.get(groundLayerName);
+
+        if (exitIfMissing(ground, groundLayerName)) return;
+
+        addCollisionLayer(ground);
+
+        Gdx.app.log("JbumpMapInitializationSystem",
+            "Collision setup complete. Total static items in world: "
+                + jbumpWorld.getItems().size());
+
+        // Disable system — initialization only
+        setEnabled(false);
+    }
+
+    private boolean exitIfMissing(TiledMapTileLayer layer, String name) {
+        if (layer == null) {
             Gdx.app.error("JbumpMapInitializationSystem",
-                "Collision layer '" + collisionLayerName + "' not found!");
-            return;
+                "Collision layer '" + name + "' not found!");
+            return true;
         }
+        return false;
+    }
 
-        // Get raw tile dimensions
-        float rawTileWidth = collisionLayer.getTileWidth();
-        float rawTileHeight = collisionLayer.getTileHeight();
+    /** Build collisions from a layer. Every tile with property collision=true is solid. */
+    private void addCollisionLayer(TiledMapTileLayer layer) {
 
-        // Calculate scaled tile dimensions for the Jbump Rect
+        float rawTileWidth = layer.getTileWidth();
+        float rawTileHeight = layer.getTileHeight();
+
         float scaledTileWidth = rawTileWidth * SCALE;
         float scaledTileHeight = rawTileHeight * SCALE;
 
-        // Iterate over the entire layer
-        for (int x = 0; x < collisionLayer.getWidth(); x++) {
-            for (int y = 0; y < collisionLayer.getHeight(); y++) {
+        boolean logOnce = true;
 
-                TiledMapTileLayer.Cell cell = collisionLayer.getCell(x, y);
+        for (int x = 0; x < layer.getWidth(); x++) {
+            for (int y = 0; y < layer.getHeight(); y++) {
 
-                if (cell != null && cell.getTile() != null) {
-                    TiledMapTile tile = cell.getTile();
+                TiledMapTileLayer.Cell cell = layer.getCell(x, y);
+                if (cell == null) continue;
 
-                    if (tile.getId() == COLLISION_GID) {
+                TiledMapTile tile = cell.getTile();
+                if (tile == null) continue;
 
-                        // Calculate raw world position
-                        float rawWorldX = x * rawTileWidth;
-                        float rawWorldY = y * rawTileHeight;
+                // TILE PROPERTY CHECK — safest method
+                boolean isCollision =
+                    tile.getProperties().get("collision",  true, Boolean.class);
 
-                        // --- APPLY SCALE TO WORLD COORDINATES ---
-                        float worldX = rawWorldX * SCALE;
-                        float worldY = rawWorldY * SCALE;
+                if (!isCollision) continue;
 
-                        // Create the Jbump Item
-                        // Since jbumpWorld is World<Object>, we cast the user data
-                        Item<Object> item = new Item<>(STATIC_ITEM_IDENTIFIER);
-
-                        // Add the item to the world using the SCALED dimensions
-                        jbumpWorld.add(item, worldX, worldY, scaledTileWidth, scaledTileHeight);
-                    }
+                // Log once so we know collision is actually detected
+                if (logOnce) {
+                    Gdx.app.log("JbumpMapInitializationSystem",
+                        "Detected collision tiles via property on layer '" + layer.getName() + "'.");
+                    logOnce = false;
                 }
+
+                // Convert tile coords → world coords (scaled)
+                float rawWorldX = x * rawTileWidth;
+                float rawWorldY = y * rawTileHeight;
+
+                float worldX = rawWorldX * SCALE;
+                float worldY = rawWorldY * SCALE;
+
+                // Create static Jbump item
+                Item<Object> item = new Item<>(STATIC_ITEM_IDENTIFIER);
+                jbumpWorld.add(item, worldX, worldY, scaledTileWidth, scaledTileHeight);
             }
         }
 
-        Gdx.app.log("JbumpMapInitializationSystem",
-            "Completed map collision setup. Jbump World contains " + jbumpWorld.getItems().size() + " static items.");
+        for (Item<Object> item : jbumpWorld.getItems()) {
+            float x = jbumpWorld.getRect(item).x;
+            float y = jbumpWorld.getRect(item).y;
+            float w = jbumpWorld.getRect(item).w;
+            float h = jbumpWorld.getRect(item).h;
 
-        // Disable the system as its job is done
-        this.setEnabled(false);
+            Gdx.app.log("COLLISION_DEBUG",
+                item.userData + " at " + x + "," + y + " size " + w + "," + h);
+        }
+
     }
 
     @Override
     protected void processSystem() {
-        // Initialization system
+        // Not used — initialization only
     }
 }

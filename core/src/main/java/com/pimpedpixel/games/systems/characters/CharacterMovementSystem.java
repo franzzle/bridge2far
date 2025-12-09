@@ -46,14 +46,14 @@ public class CharacterMovementSystem extends IteratingSystem {
         TransformComponent t = mTransform.get(entityId);
         PhysicsComponent p = mPhysics.get(entityId);
         HarryStateComponent s = mState.get(entityId);
-        Item<Integer> item = mJbumpItem.get(entityId).item; // Get the Jbump Item
+        Item<Integer> item = mJbumpItem.get(entityId).item;
 
         // --- INPUT ---
         boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT);
         boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
         boolean jump = Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
 
-        // Horizontal movement (calculating velocity)
+        // Horizontal movement
         p.vx = 0;
         if (left) {
             p.vx = -moveSpeed;
@@ -63,51 +63,44 @@ public class CharacterMovementSystem extends IteratingSystem {
             s.dir = Direction.RIGHT;
         }
 
-        // Jump (applying impulse)
+        // Jump logic
         if (jump && p.onGround) {
             p.vy = jumpSpeed;
             p.onGround = false;
             s.state = HarryState.JUMPING;
             s.stateTime = 0f;
+            s.justJumped = true; // Flag to indicate a jump has just occurred
         }
 
-        // Gravity (applying acceleration)
+        // Gravity
         p.vy += gravity * dt;
 
-        // Calculate target position based on integrated velocity
+        // Calculate target position
         float dx = p.vx * dt;
         float dy = p.vy * dt;
         float newX = t.x + dx;
         float newY = t.y + dy;
 
-        // --- JBUMP COLLISION RESOLUTION ---
-
-        // 1. Ask Jbump to move the item and resolve collisions.
+        // JBUMP COLLISION RESOLUTION
         Response.Result result = jbumpWorld.move(item, newX, newY, playerFilter);
-
-        // 2. Update the character's position with the collision-resolved position.
         t.x = result.goalX;
         t.y = result.goalY;
 
-        // 3. Check collision results for 'onGround' status.
+        // Check for ground collision
         boolean touchedGround = false;
-
-        // Loop through all generated collisions
         for (int i = 0; i < result.projectedCollisions.size(); i++) {
             Collision collision = result.projectedCollisions.get(i);
-
-            // If the collision normal points upward (meaning we hit a surface below us)
             if (collision.normal.y > 0.001f) {
                 touchedGround = true;
-                p.vy = 0; // Stop vertical movement
+                p.vy = 0;
                 break;
             }
         }
 
-        // 4. Update PhysicsComponent state
+        // Update ground status
         if (touchedGround) {
             p.onGround = true;
-            // Ensure velocity is zeroed out if standing still, especially after gravity.
+            s.justJumped = false; // Reset the flag when landing
             if (Math.abs(p.vy) < 1f) {
                 p.vy = 0;
             }
@@ -115,21 +108,31 @@ public class CharacterMovementSystem extends IteratingSystem {
             p.onGround = false;
         }
 
-        // --- STATE MACHINE ---
+        // STATE MACHINE
         if (!p.onGround) {
-            // Note: In platformers, you often use FALLING when p.vy < 0 and JUMPING when p.vy > 0.
-            if (p.vy > 0) {
+            // If the character just jumped, keep the JUMPING state for a short grace period
+            if (s.justJumped) {
                 s.state = HarryState.JUMPING;
-            } else {
-                s.state = HarryState.FALLING; // Keeping your original logic here.
+                // Reset the flag after a short grace period (e.g., 0.1 seconds)
+                if (s.stateTime > 0.1f) {
+                    s.justJumped = false;
+                }
+            }
+            // Transition to FALLING if the character is moving downward and the grace period is over
+            else if (p.vy < 0) {
+                s.state = HarryState.FALLING;
             }
         } else {
+            s.justJumped = false; // Reset the flag when landing
             if (Math.abs(p.vx) > 1f) {
                 s.state = HarryState.WALKING;
             } else {
                 s.state = HarryState.RESTING;
             }
         }
+
         s.stateTime += dt;
     }
+
+
 }
