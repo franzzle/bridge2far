@@ -26,7 +26,7 @@ import com.pimpedpixel.games.systems.playfield.MapForegroundRenderSystem;
 
 import static com.pimpedpixel.games.DesignResolution.ASSET_SCALE;
 
-public class BridgeFallGame extends ApplicationAdapter {
+public class Bridge2FarGame extends ApplicationAdapter {
 
     private Stage stage;
     private World artemisWorld;

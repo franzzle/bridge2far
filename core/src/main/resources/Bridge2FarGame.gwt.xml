@@ -1,0 +1,8 @@
+<module>
+    <source path="."/>
+    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games.console"/>
+    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games.ecs.components"/>
+    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games.ecs.systems"/>
+    <extend-configuration-property name="artemis.reflect.include" value="com.pimpedpixel.games.ecs.components"/>
+    <extend-configuration-property name="artemis.reflect.include" value="com.pimpedpixel.games.ecs.systems"/>
+</module>

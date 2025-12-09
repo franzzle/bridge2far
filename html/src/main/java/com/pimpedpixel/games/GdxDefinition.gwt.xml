@@ -12,6 +12,7 @@
     <!-- "Inherits" lines are how GWT knows where to look for code and configuration in other projects or libraries. -->
     <inherits name="com.badlogic.gdx.backends.gdx_backends_gwt"/>
     <inherits name="com.artemis.backends.artemis_backends_gwt"/>
+
     <inherits name="com.badlogic.gdx.physics.box2d.box2d-gwt"/>
     <inherits name="com.dongbat.jbump"/>
     <inherits name="dev.lyze.gdxUnBox2d"/>
@@ -33,6 +34,8 @@
     <!-- You can include individual files like this, and access them with Gdx.files.classpath("path/to/file.png") : -->
     <!-- This is also a feature of libGDX, so these lines go after the above "inherits" that brings in libGDX. -->
     <!-- <extend-configuration-property name="gdx.files.classpath" value="path/to/file.png" /> -->
+
+    <inherits name='Bridge2FarGame' />
 
     <!-- You usually won't need to make changes to the rest of this. -->
     <set-configuration-property name="gdx.assetpath" value="../assets"/>
