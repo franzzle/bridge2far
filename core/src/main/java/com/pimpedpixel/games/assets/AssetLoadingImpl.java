@@ -39,10 +39,18 @@ public class AssetLoadingImpl implements AssetLoading {
     }
 
     private void initC64Font() {
-        final FileHandle fontFileHandle = Gdx.files.internal("font/c64.png");
+        final String fontFile = "font/c64.fnt";
+        final FileHandle fontFileHandle = Gdx.files.internal(fontFile);
         if (fontFileHandle.exists()) {
             Gdx.app.log(this.getClass().getSimpleName(), fontFileHandle.path());
-            assetManager.load(fontFileHandle.path(), Texture.class);
+            final BitmapFontLoader.BitmapFontParameter bitmapFontParameter = new BitmapFontLoader.BitmapFontParameter();
+            bitmapFontParameter.flip = false;
+            bitmapFontParameter.minFilter = Texture.TextureFilter.Nearest;
+            bitmapFontParameter.magFilter = Texture.TextureFilter.Nearest;
+            assetManager.setLoader(BitmapFont.class, new BitmapFontLoader(new InternalFileHandleResolver()));
+            assetManager.load(fontFile, BitmapFont.class, bitmapFontParameter);
+        } else {
+            System.out.println("C64 font file not found: " + fontFileHandle.path());
         }
     }
 
@@ -59,13 +67,23 @@ public class AssetLoadingImpl implements AssetLoading {
 
     private void initTmxTiles() {
         final List<String> lines = getTmxFileList();
+        System.out.println("DEBUG: Found " + lines.size() + " TMX files in files.txt:");
+        for (String line : lines) {
+            System.out.println("  - " + line);
+        }
+        
         for (final String line : lines){
+            final String expectedPath = gameInfo.getTmxFile(line).path();
+            System.out.println("DEBUG: Checking TMX file: " + expectedPath);
+            System.out.println("DEBUG: File exists: " + gameInfo.getTmxFile(line).exists());
+            
             if (gameInfo.getTmxFile(line).exists()) {
                 final String tileMapFileName = gameInfo.getTmxFile(line).path();
                 assetManager.setLoader(TiledMap.class, new TmxMapLoader(new InternalFileHandleResolver()));
                 assetManager.load(tileMapFileName, TiledMap.class);
+                System.out.println("DEBUG: Loaded TMX asset: " + tileMapFileName);
             } else {
-                System.out.println("TMX file not found: " + gameInfo.getTmxFile(line).path());
+                System.out.println("TMX file not found: " + expectedPath);
             }
         }
     }

@@ -8,6 +8,7 @@ public class HarryAnimationsFactory {
 
     private static final float WALK_FRAME_DURATION = 0.12f;
     private static final float ONE_FRAME_DURATION = 0.2f;
+    private static final float DIMINISH_FRAME_DURATION = 0.15f;
 
     public static void initAnimations(HarryAnimationComponent anim) {
         // RESTING
@@ -16,23 +17,23 @@ public class HarryAnimationsFactory {
 
         // WALKING (3 frames each)
         anim.walkingLeft = new Animation<>(
-                WALK_FRAME_DURATION,
-                new Array<>(new TextureRegion[]{
-                        HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-left-1.png"),
-                        HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-left-2.png"),
-                        HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-left-3.png")
-                }),
-                Animation.PlayMode.LOOP
+            WALK_FRAME_DURATION,
+            new Array<>(new TextureRegion[]{
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-left-1.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-left-2.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-left-3.png")
+            }),
+            Animation.PlayMode.LOOP
         );
 
         anim.walkingRight = new Animation<>(
-                WALK_FRAME_DURATION,
-                new Array<>(new TextureRegion[]{
-                        HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-right-1.png"),
-                        HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-right-2.png"),
-                        HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-right-3.png")
-                }),
-                Animation.PlayMode.LOOP
+            WALK_FRAME_DURATION,
+            new Array<>(new TextureRegion[]{
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-right-1.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-right-2.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-walking-right-3.png")
+            }),
+            Animation.PlayMode.LOOP
         );
 
         // JUMPING
@@ -43,9 +44,34 @@ public class HarryAnimationsFactory {
         anim.fallingLeft = singleFrame("characters/harry/harry-falling-left-1.png");
         anim.fallingRight = singleFrame("characters/harry/harry-falling-right-1.png");
 
-        // DYING (one frame each, you can later extend to multi-frame)
+        // DYING
         anim.dyingLeft = singleFrame("characters/harry/harry-dying-left-1.png");
         anim.dyingRight = singleFrame("characters/harry/harry-dying-right-1.png");
+
+        // DIMINISHING (multi-frame)
+        anim.diminishingLeft = new Animation<>(
+            DIMINISH_FRAME_DURATION,
+            new Array<>(new TextureRegion[]{
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-diminishing-left-1.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-diminishing-left-2.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-diminishing-left-3.png")
+            }),
+            Animation.PlayMode.NORMAL
+        );
+
+        anim.diminishingRight = new Animation<>(
+            DIMINISH_FRAME_DURATION,
+            new Array<>(new TextureRegion[]{
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-diminishing-right-1.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-diminishing-right-2.png"),
+                HarryTextureLoader.loadColorKeyedRegion("characters/harry/harry-diminishing-right-3.png")
+            }),
+            Animation.PlayMode.NORMAL
+        );
+
+        // DIMINISHED (final single frame)
+        anim.diminishedLeft = singleFrame("characters/harry/harry-diminished-left-1.png");
+        anim.diminishedRight = singleFrame("characters/harry/harry-diminished-right-1.png");
     }
 
     private static Animation<TextureRegion> singleFrame(String path) {

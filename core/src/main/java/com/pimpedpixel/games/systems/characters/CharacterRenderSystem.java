@@ -75,6 +75,8 @@ public class CharacterRenderSystem extends IteratingSystem {
 
     private Animation<TextureRegion> selectAnimation(HarryStateComponent s, HarryAnimationComponent a) {
         switch (s.state) {
+            case DIMINISHING:
+                return (s.dir == Direction.LEFT) ? a.diminishingLeft : a.diminishingRight;
             case WALKING:
                 return (s.dir == Direction.LEFT) ? a.walkingLeft : a.walkingRight;
             case JUMPING:

@@ -111,6 +111,9 @@ public class JbumpMapInitializationSystem extends BaseSystem {
             }
         }
 
+        // Add boundary walls around the playable area
+        addBoundaryWalls(layer.getWidth(), layer.getHeight(), scaledTileWidth, scaledTileHeight);
+
         for (Item<Object> item : jbumpWorld.getItems()) {
             float x = jbumpWorld.getRect(item).x;
             float y = jbumpWorld.getRect(item).y;
@@ -121,6 +124,40 @@ public class JbumpMapInitializationSystem extends BaseSystem {
                 item.userData + " at " + x + "," + y + " size " + w + "," + h);
         }
 
+    }
+
+    /**
+     * Adds boundary walls around the entire playable area to prevent the player
+     * from leaving the room and falling into the abyss.
+     */
+    private void addBoundaryWalls(int mapWidth, int mapHeight, float tileWidth, float tileHeight) {
+        
+        // Calculate the total map dimensions
+        float mapWidthPixels = mapWidth * tileWidth;
+        float mapHeightPixels = mapHeight * tileHeight;
+        
+        // Create boundary walls (1 tile thick)
+        String boundaryIdentifier = "BOUNDARY_WALL";
+        
+        // Left wall - placed just left of the map
+        Item<Object> leftWall = new Item<>(boundaryIdentifier);
+        jbumpWorld.add(leftWall, -tileWidth, 0, tileWidth, mapHeightPixels);
+        
+        // Right wall - placed just right of the map
+        Item<Object> rightWall = new Item<>(boundaryIdentifier);
+        jbumpWorld.add(rightWall, mapWidthPixels, 0, tileWidth, mapHeightPixels);
+        
+        // Bottom wall - placed just below the map
+        Item<Object> bottomWall = new Item<>(boundaryIdentifier);
+        jbumpWorld.add(bottomWall, 0, -tileHeight, mapWidthPixels, tileHeight);
+        
+        // Top wall - placed just above the map
+        Item<Object> topWall = new Item<>(boundaryIdentifier);
+        jbumpWorld.add(topWall, 0, mapHeightPixels, mapWidthPixels, tileHeight);
+        
+        Gdx.app.log("JbumpMapInitializationSystem", 
+            "Added boundary walls: Left at x=" + (-tileWidth) + ", Right at x=" + mapWidthPixels + 
+            ", Bottom at y=" + (-tileHeight) + ", Top at y=" + mapHeightPixels);
     }
 
     @Override

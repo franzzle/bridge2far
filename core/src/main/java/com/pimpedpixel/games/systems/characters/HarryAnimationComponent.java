@@ -15,4 +15,8 @@ public class HarryAnimationComponent extends Component {
     public Animation<TextureRegion> fallingRight;
     public Animation<TextureRegion> dyingLeft;
     public Animation<TextureRegion> dyingRight;
+    public Animation<TextureRegion> diminishingLeft;
+    public Animation<TextureRegion> diminishingRight;
+    public Animation<TextureRegion> diminishedLeft;
+    public Animation<TextureRegion> diminishedRight;
 }

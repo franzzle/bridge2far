@@ -15,13 +15,17 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.dongbat.jbump.Item;
+
 // Import the new JbumpItemComponent
 import com.pimpedpixel.games.assets.AssetLoadingImpl;
 import com.pimpedpixel.games.systems.characters.*;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
+import com.pimpedpixel.games.systems.gameplay.HarryDeathSystem;
+import com.pimpedpixel.games.systems.gameplay.HarryLevelStartSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
+import com.pimpedpixel.games.systems.hud.TimerSystem;
+import com.pimpedpixel.games.gameplay.*;
 import com.pimpedpixel.games.systems.playfield.MapBackgroundRenderSystem;
 import com.pimpedpixel.games.systems.playfield.MapForegroundRenderSystem;
 
@@ -38,9 +42,14 @@ public class Bridge2FarGame extends ApplicationAdapter {
     private GameInfo gameInfo;
     private OrthogonalTiledMapRenderer mapRenderer;
     private Viewport viewport;
+    private LevelLoader levelLoader;
+    private LevelLoader.LevelContainer levelContainer;
 
     // --- NEW: Single Jbump World for all objects ---
     private com.dongbat.jbump.World<Object> jbumpWorld;
+
+    // Harry factory for creating Harry entities
+    private HarryFactory harryFactory;
 
     // Harry's bounding box size
     // TODO Get the character width and height and multiply with asset scale
@@ -59,6 +68,16 @@ public class Bridge2FarGame extends ApplicationAdapter {
         assetLoading.start();
         assetLoading.ready();
 
+        // --- Level Loading ---
+        levelLoader = new LevelLoader();
+        try {
+            levelContainer = levelLoader.loadLevels("assets/gameplay/levelInfo.json");
+            System.out.println("Loaded " + levelContainer.getLevels().length + " levels");
+        } catch (Exception e) {
+            System.err.println("Failed to load levels: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         // --- Rendering basics ---
         spriteBatch = new SpriteBatch();
 
@@ -70,9 +89,15 @@ public class Bridge2FarGame extends ApplicationAdapter {
         stage = new Stage(viewport, spriteBatch);
 
         // --- Load tilemap & create renderer BEFORE world config ---
-        final TiledMap tileMap = loadBridgeFallMap();
+        int currentLevelNumber = 1; // Default to level 1
+        if (levelContainer != null && levelContainer.getLevels().length > 0) {
+            Level level = levelContainer.getLevels()[0]; // Get first level for now
+            currentLevelNumber = level.getLevelNumber();
+        }
+
+        final TiledMap tileMap = loadBridgeFallMap(currentLevelNumber);
         if (tileMap == null) {
-            Gdx.app.error("BridgeFallGame", "Failed to load bridgefall_1 TMX");
+            Gdx.app.error("BridgeFallGame", "Failed to load bridgefall_" + currentLevelNumber + " TMX");
             return; // Exit on failure
         }
         mapRenderer = new OrthogonalTiledMapRenderer(tileMap, ASSET_SCALE, spriteBatch);
@@ -98,6 +123,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 // 3. Character movement & rendering
                 // Use the single jbumpWorld instance
                 new CharacterMovementSystem(jbumpWorld),
+                new HarryDeathSystem(jbumpWorld),
                 new CharacterRenderSystem(spriteBatch, camera),
 
                 // 4. Foreground layers
@@ -109,27 +135,80 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 new CollisionDebugRenderSystem(tileMap, "ground"),
                 new JbumpDebugRenderSystem(jbumpWorld,new ShapeRenderer(), camera),
                 new HarryJumpSoundSystem(),
-                new SoundSystem(new SoundManager(assetManager))
+                new SoundSystem(new SoundManager(assetManager)),
+
+                // 5. HUD Systems (must run after core systems)
+                new TimerSystem(assetManager,
+                    stage,
+                    levelContainer,
+                    artemisWorld),
+                // 6. Gameplay Systems
+                new HarryLevelStartSystem(levelContainer)
             )
             .build();
 
         artemisWorld = new World(config);
 
-        // Create Harry entity
-        createHarry(0, 700f); // Start him off the ground for testing
+        // Set up system dependencies after world creation
+        setupSystemDependencies();
+
+        // Initialize Harry factory
+        harryFactory = new HarryFactory(artemisWorld, jbumpWorld, HARRY_OFFSET_X, HARRY_WIDTH, HARRY_HEIGHT);
+
+        // Create Harry entity with position from level data
+        float startX = 0;
+        float startY = 700f;
+
+        if (levelContainer != null && levelContainer.getLevels().length > 0) {
+            Level level = levelContainer.getLevels()[0];
+            if (!level.getScenarios().isEmpty()) {
+                Scenario scenario = level.getScenarios().get(0);
+                startX = scenario.getStartingPositionX();
+                startY = scenario.getStartingPositionY();
+                System.out.println("Using level start position: (" + startX + ", " + startY + ")");
+            }
+        } else {
+            System.out.println("Using default start position: (" + startX + ", " + startY + ")");
+        }
+
+        harryFactory.createHarry(startX, startY);
+
+        // Start the first level (this will show scenario title and trigger level start logic)
+        HarryLevelStartSystem levelStartSystem = artemisWorld.getSystem(HarryLevelStartSystem.class);
+        if (levelStartSystem != null) {
+            levelStartSystem.startLevel();
+            Gdx.app.log("Bridge2FarGame", "Started first level");
+        } else {
+            Gdx.app.error("Bridge2FarGame", "Level start system not found");
+        }
 
         // If you use Stage input later, you can enable it:
         // Gdx.input.setInputProcessor(stage);
     }
 
     /**
-     * Loads the "bridgefall_1" TMX via AssetManager.
+     * Loads the "bridgefall_X" TMX via AssetManager where X is the level number.
      */
-    private TiledMap loadBridgeFallMap() {
-        final String path = gameInfo.getTmxFile("bridgefall_1").path();
+    private TiledMap loadBridgeFallMap(int levelNumber) {
+        final String mapName = "bridgefall_" + levelNumber;
+        final String path = gameInfo.getTmxFile(mapName).path();
+
+        System.out.println("DEBUG: Trying to load level " + levelNumber + " with map name: " + mapName);
+        System.out.println("DEBUG: Expected path: " + path);
+        System.out.println("DEBUG: File exists: " + gameInfo.getTmxFile(mapName).exists());
+        System.out.println("DEBUG: AssetManager contains path: " + assetManager.contains(path));
 
         if (!assetManager.contains(path)) {
             Gdx.app.error("BridgeFallGame", "AssetManager does not contain TMX: " + path);
+
+            // List all loaded assets for debugging
+            System.out.println("DEBUG: Available TMX assets in AssetManager:");
+            for (String assetName : assetManager.getAssetNames()) {
+                if (assetName.contains("bridgefall")) {
+                    System.out.println("  - " + assetName);
+                }
+            }
+
             return null;
         }
 
@@ -137,42 +216,32 @@ public class Bridge2FarGame extends ApplicationAdapter {
         return assetManager.get(path, TiledMap.class);
     }
 
-    private void createHarry(float x, float y) {
-        int entityId = artemisWorld.create();
+    /**
+     * Set up system dependencies after world creation.
+     */
+    private void setupSystemDependencies() {
+        // Get the systems
+        HarryLevelStartSystem levelStartSystem = artemisWorld.getSystem(HarryLevelStartSystem.class);
+        TimerSystem timerSystem = artemisWorld.getSystem(TimerSystem.class);
+        HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
 
-        // Use the entityId as the object type for dynamic items
-        Item<Integer> harryItem = new Item<>(entityId);
-
-        // 1. TRANSFORM
-        TransformComponent t = artemisWorld.edit(entityId).create(TransformComponent.class);
-        t.x = x;
-        t.y = y;
-
-        // 2. PHYSICS
-        PhysicsComponent p = artemisWorld.edit(entityId).create(PhysicsComponent.class);
-        p.vx = 0;
-        p.vy = 0;
-        p.onGround = false; // Start false, collision loop will fix
-
-        // 3. JUMP ITEM (NEW)
-        // Add the component and initialize the Jbump Item at the starting position
-        JbumpItemComponent j = artemisWorld.edit(entityId).create(JbumpItemComponent.class);
-        j.item = harryItem;
-
-        // Add the item to the Jbump World (x, y, width, height)
-        // The type for the Item's user data is Integer, which is compatible with World<Object>
-        jbumpWorld.add((Item)harryItem, x +HARRY_OFFSET_X , y, HARRY_WIDTH, HARRY_HEIGHT);
-
-
-        // 4. STATE
-        HarryStateComponent s = artemisWorld.edit(entityId).create(HarryStateComponent.class);
-        s.state = HarryState.RESTING;
-        s.dir = Direction.LEFT;
-        s.stateTime = 0f;
-
-        HarryAnimationComponent anim = artemisWorld.edit(entityId).create(HarryAnimationComponent.class);
-        HarryAnimationsFactory.initAnimations(anim);
+        if (levelStartSystem != null && timerSystem != null) {
+            levelStartSystem.setTimerSystem(timerSystem);
+            
+            // Set up death system for timer reset and scenario title display on revival
+            if (deathSystem != null) {
+                deathSystem.setTimerSystem(timerSystem);
+                deathSystem.setLevelContainer(levelContainer);
+                deathSystem.setCurrentLevelIndex(0); // Start with level 1 (index 0)
+            }
+            
+            Gdx.app.log("Bridge2FarGame", "Set up system dependencies successfully");
+        } else {
+            Gdx.app.error("Bridge2FarGame", "Failed to set up system dependencies");
+        }
     }
+
+
 
     @Override
     public void render() {
@@ -186,15 +255,13 @@ public class Bridge2FarGame extends ApplicationAdapter {
         artemisWorld.process();
 
         // If you want Stage UI on top:
-        // stage.act(deltaTime);
-        // stage.draw();
+         stage.act(deltaTime);
+         stage.draw();
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
-        // If you want the stage to handle it:
-        // stage.getViewport().update(width, height, true);
+         stage.getViewport().update(width, height, true);
     }
 
     @Override

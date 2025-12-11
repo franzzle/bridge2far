@@ -5,7 +5,10 @@ public enum HarryState {
     WALKING,
     JUMPING,
     FALLING,
-    DYING
+    DYING,
+    DIED,
+    DIMINISHING,
+    DIMINISHED
 }
 
 

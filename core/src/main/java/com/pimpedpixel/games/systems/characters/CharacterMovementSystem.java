@@ -48,23 +48,31 @@ public class CharacterMovementSystem extends IteratingSystem {
         HarryStateComponent s = mState.get(entityId);
         Item<Integer> item = mJbumpItem.get(entityId).item;
 
+        // Check if movement should be blocked for certain states
+        boolean movementBlocked = s.state == HarryState.DIED || 
+                                 s.state == HarryState.DYING || 
+                                 s.state == HarryState.DIMINISHING || 
+                                 s.state == HarryState.DIMINISHED;
+
         // --- INPUT ---
         boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT);
         boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
         boolean jump = Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
 
-        // Horizontal movement
+        // Horizontal movement - only allow if not in blocked states
         p.vx = 0;
-        if (left) {
-            p.vx = -moveSpeed;
-            s.dir = Direction.LEFT;
-        } else if (right) {
-            p.vx = moveSpeed;
-            s.dir = Direction.RIGHT;
+        if (!movementBlocked) {
+            if (left) {
+                p.vx = -moveSpeed;
+                s.dir = Direction.LEFT;
+            } else if (right) {
+                p.vx = moveSpeed;
+                s.dir = Direction.RIGHT;
+            }
         }
 
-        // Jump logic
-        if (jump && p.onGround) {
+        // Jump logic - only allow if not in blocked states
+        if (jump && p.onGround && !movementBlocked) {
             p.vy = jumpSpeed;
             p.onGround = false;
             s.state = HarryState.JUMPING;
@@ -72,8 +80,10 @@ public class CharacterMovementSystem extends IteratingSystem {
             s.justJumped = true; // Flag to indicate a jump has just occurred
         }
 
-        // Gravity
-        p.vy += gravity * dt;
+        // Gravity - apply gravity unless in DIMINISHING or DIMINISHED states
+        if (s.state != HarryState.DIMINISHING && s.state != HarryState.DIMINISHED) {
+            p.vy += gravity * dt;
+        }
 
         // Calculate target position
         float dx = p.vx * dt;
@@ -108,31 +118,34 @@ public class CharacterMovementSystem extends IteratingSystem {
             p.onGround = false;
         }
 
-        // STATE MACHINE
-        if (!p.onGround) {
-            // If the character just jumped, keep the JUMPING state for a short grace period
-            if (s.justJumped) {
-                s.state = HarryState.JUMPING;
-                // Reset the flag after a short grace period (e.g., 0.1 seconds)
-                if (s.stateTime > 0.1f) {
-                    s.justJumped = false;
+        // STATE MACHINE - only update states if not in blocked states
+        if (!movementBlocked) {
+            if (!p.onGround) {
+                // If the character just jumped, keep the JUMPING state for a short grace period
+                if (s.justJumped) {
+                    s.state = HarryState.JUMPING;
+                    // Reset the flag after a short grace period (e.g., 0.1 seconds)
+                    if (s.stateTime > 0.1f) {
+                        s.justJumped = false;
+                    }
                 }
-            }
-            // Transition to FALLING if the character is moving downward and the grace period is over
-            else if (p.vy < 0) {
-                s.state = HarryState.FALLING;
-            }
-        } else {
-            s.justJumped = false; // Reset the flag when landing
-            if (Math.abs(p.vx) > 1f) {
-                s.state = HarryState.WALKING;
+                // Transition to FALLING if the character is moving downward and the grace period is over
+                else if (p.vy < 0) {
+                    s.state = HarryState.FALLING;
+                }
             } else {
-                s.state = HarryState.RESTING;
+                s.justJumped = false; // Reset the flag when landing
+                if (Math.abs(p.vx) > 1f) {
+                    s.state = HarryState.WALKING;
+                } else {
+                    s.state = HarryState.RESTING;
+                }
+                if(t.y < 130){
+                    s.state = HarryState.DYING;
+                }
             }
         }
 
         s.stateTime += dt;
     }
-
-
 }

@@ -3,8 +3,10 @@ package com.pimpedpixel.games.gameplay;
 public class Scenario {
     private String title;
     private int timeLimit;
+    private float startingPositionX;
+    private float startingPositionY;
     private CollisionLayer groundLayer;
-    private CollisionLayer topCollisionLayer;
+    private CollisionLayer baseLayer;
 
     // Getters and setters
     public String getTitle() {
@@ -23,6 +25,22 @@ public class Scenario {
         this.timeLimit = timeLimit;
     }
 
+    public float getStartingPositionX() {
+        return startingPositionX;
+    }
+
+    public void setStartingPositionX(float startingPositionX) {
+        this.startingPositionX = startingPositionX;
+    }
+
+    public float getStartingPositionY() {
+        return startingPositionY;
+    }
+
+    public void setStartingPositionY(float startingPositionY) {
+        this.startingPositionY = startingPositionY;
+    }
+
     public CollisionLayer getGroundLayer() {
         return groundLayer;
     }
@@ -31,11 +49,11 @@ public class Scenario {
         this.groundLayer = groundLayer;
     }
 
-    public CollisionLayer getTopCollisionLayer() {
-        return topCollisionLayer;
+    public CollisionLayer getBaseLayer() {
+        return baseLayer;
     }
 
-    public void setTopCollisionLayer(CollisionLayer topCollisionLayer) {
-        this.topCollisionLayer = topCollisionLayer;
+    public void setBaseLayer(CollisionLayer baseLayer) {
+        this.baseLayer = baseLayer;
     }
 }
