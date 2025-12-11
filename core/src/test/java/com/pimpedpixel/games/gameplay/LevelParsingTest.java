@@ -66,4 +66,62 @@ public class LevelParsingTest {
         
         System.out.println("✅ JSON parsing test passed!");
     }
+    
+    @Test
+    public void testSystemDefaultsParsing() {
+        // Test JSON that includes systemdefaults
+        String testJson = "{\n" +
+            "  \"systemdefaults\" : {\n" +
+            "    \"moveSpeed\" : 120,\n" +
+            "    \"jumpSpeed\" : 260,\n" +
+            "    \"gravity\" : -600,\n" +
+            "    \"spawnX\" : 20,\n" +
+            "    \"spawnY\" : 700,\n" +
+            "    \"timeLimit\" : 30,\n" +
+            "    \"dyingDuration\" : 2,\n" +
+            "    \"diedDuration\" : 1,\n" +
+            "    \"timerDecrementAmount\" : 1\n" +
+            "  },\n" +
+            "  \"levels\": [\n" +
+            "    {\n" +
+            "      \"levelNumber\": 1,\n" +
+            "      \"scenarios\": [\n" +
+            "        {\n" +
+            "          \"title\": \"Test Scenario\",\n" +
+            "          \"timeLimit\": 30,\n" +
+            "          \"startingPositionX\" : 100,\n" +
+            "          \"startingPositionY\" : 500,\n" +
+            "          \"groundLayer\": {\n" +
+            "            \"matchingRow\" : 5,\n" +
+            "            \"cellStates\": [1, 0, 1, 1, 0]\n" +
+            "          },\n" +
+            "          \"baseLayer\": {\n" +
+            "            \"matchingRow\" : 10,\n" +
+            "            \"cellStates\": [0, 1, 0, 1, 1]\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+        
+        Json json = new Json();
+        LevelLoader.LevelContainer container = json.fromJson(LevelLoader.LevelContainer.class, testJson);
+        
+        assertNotNull("Container should not be null", container);
+        assertNotNull("System defaults should not be null", container.getSystemdefaults());
+        
+        LevelLoader.SystemDefaults systemDefaults = container.getSystemdefaults();
+        assertEquals("moveSpeed should be 120", 120, systemDefaults.getMoveSpeed());
+        assertEquals("jumpSpeed should be 260", 260, systemDefaults.getJumpSpeed());
+        assertEquals("gravity should be -600", -600, systemDefaults.getGravity());
+        assertEquals("spawnX should be 20", 20, systemDefaults.getSpawnX());
+        assertEquals("spawnY should be 700", 700, systemDefaults.getSpawnY());
+        assertEquals("timeLimit should be 30", 30, systemDefaults.getTimeLimit());
+        assertEquals("dyingDuration should be 2", 2, systemDefaults.getDyingDuration());
+        assertEquals("diedDuration should be 1", 1, systemDefaults.getDiedDuration());
+        assertEquals("timerDecrementAmount should be 1", 1, systemDefaults.getTimerDecrementAmount());
+        
+        System.out.println("✅ System defaults parsing test passed!");
+    }
 }

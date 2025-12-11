@@ -55,13 +55,36 @@ public class AssetLoadingImpl implements AssetLoading {
     }
 
     private void initSoundFx() {
-        final String soundFile = "soundfx/jumping.ogg";
-        // Check if sound file exists
-        if (Gdx.files.internal(soundFile).exists()) {
-            assetManager.setLoader(Sound.class, new SoundLoader(new InternalFileHandleResolver()));
-            assetManager.load(soundFile, Sound.class);
-        } else {
-            System.out.println("Sound file not found: " + soundFile);
+        FileHandle fileList = gameInfo.getSoundFileList();
+
+        if (!fileList.exists()) {
+            Gdx.app.debug("AssetLoading", "Sound file list not found: " + fileList.path());
+            return;
+        }
+
+        String content = fileList.readString("UTF-8");
+        String[] lines = content.split("\\r?\\n");
+
+        System.out.println("DEBUG: Found " + lines.length + " sound files in files.txt:");
+        for (String line : lines) {
+            System.out.println("  - " + line);
+        }
+
+        for (String line : lines) {
+            String filename = line.trim();
+            if (filename.isEmpty()) continue;
+
+            FileHandle soundFile = gameInfo.getSoundForOgg(filename);
+            if (!soundFile.exists()) {
+                Gdx.app.error("AssetLoading", "Sound file listed but not found: " + soundFile.path());
+                continue;
+            }
+
+            if (!assetManager.isLoaded(soundFile.path(), Sound.class)) {
+                assetManager.setLoader(Sound.class, new SoundLoader(new InternalFileHandleResolver()));
+                assetManager.load(soundFile.path(), Sound.class);
+                Gdx.app.log("AssetLoading", "Preloading sound: " + soundFile.path());
+            }
         }
     }
 

@@ -25,4 +25,14 @@ public class GameInfo {
         String path = "rooms/tiles/files.txt";
         return Gdx.files.internal(path);
     }
+
+    public FileHandle getSoundFileList() {
+        String path = "soundfx/files.txt";
+        return Gdx.files.internal(path);
+    }
+
+    public FileHandle getSoundForOgg(String filenameWithoutExtension) {
+        String path = "soundfx/" + filenameWithoutExtension + ".ogg";
+        return Gdx.files.internal(path);
+    }
 }

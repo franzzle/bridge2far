@@ -68,11 +68,11 @@ public class TimerSystem extends IteratingSystem {
         timerLabel.setPosition(timerX, timerY);
         timerLabel.setAlignment(Align.left);
 
-        // Create scenario title label (centered, initially invisible)
+        // Create scenario title label (centered horizontally, 75% from bottom, initially invisible)
         scenarioTitleLabel = new Label("", labelStyle);
         scenarioTitleLabel.setPosition(
             (DesignResolution.WIDTH - scenarioTitleLabel.getWidth()) / 2,
-            (DesignResolution.HEIGHT - scenarioTitleLabel.getHeight()) / 2
+            DesignResolution.HEIGHT * 0.25f  // 25% from bottom = 75% from top
         );
         scenarioTitleLabel.setAlignment(Align.center);
         scenarioTitleLabel.setVisible(false);
@@ -216,10 +216,10 @@ public class TimerSystem extends IteratingSystem {
         // Set the title text
         scenarioTitleLabel.setText(title);
 
-        // Center the label (need to recalculate position after text change)
+        // Position the label (centered horizontally, 75% from bottom)
         scenarioTitleLabel.setPosition(
             (DesignResolution.WIDTH - scenarioTitleLabel.getWidth()) / 2,
-            (DesignResolution.HEIGHT - scenarioTitleLabel.getHeight()) / 2
+            DesignResolution.HEIGHT * 0.75f
         );
 
         // Bring to front and make sure it's visible

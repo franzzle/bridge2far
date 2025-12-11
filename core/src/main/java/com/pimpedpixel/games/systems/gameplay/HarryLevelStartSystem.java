@@ -25,6 +25,7 @@ public class HarryLevelStartSystem extends IteratingSystem {
 
     private final LevelLoader.LevelContainer levelContainer;
     private int currentLevelIndex = 0;
+    private int currentScenarioIndex = 0;
     private boolean levelStartPending = false;
     private float timerDecrementAmount = 1f; // Decrement timer by 1 second at level start
 
@@ -92,12 +93,17 @@ public class HarryLevelStartSystem extends IteratingSystem {
         if (timerSystem != null && levelContainer != null && currentLevelIndex >= 0 && currentLevelIndex < levelContainer.getLevels().length) {
             Level currentLevel = levelContainer.getLevels()[currentLevelIndex];
             if (currentLevel != null && !currentLevel.getScenarios().isEmpty()) {
-                Scenario scenario = currentLevel.getScenarios().get(0);
-                if (scenario != null && scenario.getTitle() != null && !scenario.getTitle().isEmpty()) {
-                    log("Showing scenario title: " + scenario.getTitle());
-                    timerSystem.showScenarioTitle(scenario.getTitle());
+                // Use current scenario index instead of hardcoded 0
+                if (currentScenarioIndex >= 0 && currentScenarioIndex < currentLevel.getScenarios().size()) {
+                    Scenario scenario = currentLevel.getScenarios().get(currentScenarioIndex);
+                    if (scenario != null && scenario.getTitle() != null && !scenario.getTitle().isEmpty()) {
+                        log("Showing scenario title: " + scenario.getTitle());
+                        timerSystem.showScenarioTitle(scenario.getTitle());
+                    } else {
+                        log("Scenario title is null or empty");
+                    }
                 } else {
-                    log("Scenario title is null or empty");
+                    log("Invalid scenario index: " + currentScenarioIndex);
                 }
             } else {
                 log("No scenarios found for level " + (currentLevelIndex + 1));
@@ -135,6 +141,7 @@ public class HarryLevelStartSystem extends IteratingSystem {
         }
 
         currentLevelIndex++;
+        currentScenarioIndex = 0; // Reset to first scenario when changing levels
 
         if (currentLevelIndex >= levelContainer.getLevels().length) {
             log("All levels completed!");
@@ -142,6 +149,50 @@ public class HarryLevelStartSystem extends IteratingSystem {
         } else {
             log("Transitioned to level " + (currentLevelIndex + 1));
         }
+    }
+
+    /**
+     * Transition to the next scenario in the current level.
+     */
+    public void transitionToNextScenario() {
+        if (levelContainer == null || levelContainer.getLevels() == null || levelContainer.getLevels().length == 0) {
+            log("No levels available for scenario transition");
+            return;
+        }
+
+        if (currentLevelIndex < 0 || currentLevelIndex >= levelContainer.getLevels().length) {
+            log("Invalid level index for scenario transition");
+            return;
+        }
+
+        Level currentLevel = levelContainer.getLevels()[currentLevelIndex];
+        if (currentLevel.getScenarios() == null || currentLevel.getScenarios().isEmpty()) {
+            log("No scenarios available in current level");
+            return;
+        }
+
+        currentScenarioIndex++;
+
+        if (currentScenarioIndex >= currentLevel.getScenarios().size()) {
+            log("All scenarios completed in level " + (currentLevelIndex + 1));
+            currentScenarioIndex = currentLevel.getScenarios().size() - 1; // Stay on last scenario
+        } else {
+            log("Transitioned to scenario " + (currentScenarioIndex + 1) + " in level " + (currentLevelIndex + 1));
+        }
+    }
+
+    /**
+     * Get the current scenario index.
+     */
+    public int getCurrentScenarioIndex() {
+        return currentScenarioIndex;
+    }
+
+    /**
+     * Set the current scenario index.
+     */
+    public void setCurrentScenarioIndex(int scenarioIndex) {
+        this.currentScenarioIndex = scenarioIndex;
     }
 
     /**

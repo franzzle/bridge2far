@@ -25,6 +25,7 @@ public class CharacterMovementSystem extends IteratingSystem {
     // Jbump World
     private final World jbumpWorld;
 
+    //TODO
     private final float moveSpeed = 120f;
     private final float jumpSpeed = 260f;
     private final float gravity = -600f;
@@ -49,9 +50,9 @@ public class CharacterMovementSystem extends IteratingSystem {
         Item<Integer> item = mJbumpItem.get(entityId).item;
 
         // Check if movement should be blocked for certain states
-        boolean movementBlocked = s.state == HarryState.DIED || 
-                                 s.state == HarryState.DYING || 
-                                 s.state == HarryState.DIMINISHING || 
+        boolean movementBlocked = s.state == HarryState.DIED ||
+                                 s.state == HarryState.DYING ||
+                                 s.state == HarryState.DIMINISHING ||
                                  s.state == HarryState.DIMINISHED;
 
         // --- INPUT ---

@@ -10,7 +10,7 @@ public class SoundSystem extends IteratingSystem {
     private final SoundManager soundManager;
 
     public SoundSystem(SoundManager soundManager) {
-        super(Aspect.all(PlaySoundComponent.class));  // ✅ this is what was missing
+        super(Aspect.all(PlaySoundComponent.class));
         this.soundManager = soundManager;
     }
 

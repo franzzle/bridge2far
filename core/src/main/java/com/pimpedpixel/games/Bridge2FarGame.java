@@ -1,5 +1,6 @@
 package com.pimpedpixel.games;
 
+import com.artemis.BaseSystem;
 import com.artemis.World;
 import com.artemis.WorldConfiguration;
 import com.artemis.WorldConfigurationBuilder;
@@ -11,14 +12,24 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.util.*;
+
 // Import the new JbumpItemComponent
 import com.pimpedpixel.games.assets.AssetLoadingImpl;
+import com.pimpedpixel.games.config.DebugConfig;
 import com.pimpedpixel.games.systems.characters.*;
+import com.pimpedpixel.games.systems.characters.ZebraFactory;
+import com.pimpedpixel.games.systems.characters.ZebraStateSystem;
+import com.pimpedpixel.games.systems.characters.ActionSystem;
+import com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem;
+import com.pimpedpixel.games.systems.debug.ZebraDebugSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryDeathSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryLevelStartSystem;
@@ -26,6 +37,7 @@ import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
 import com.pimpedpixel.games.gameplay.*;
+import com.pimpedpixel.games.config.CharacterConfig;
 import com.pimpedpixel.games.systems.playfield.MapBackgroundRenderSystem;
 import com.pimpedpixel.games.systems.playfield.MapForegroundRenderSystem;
 
@@ -51,13 +63,8 @@ public class Bridge2FarGame extends ApplicationAdapter {
     // Harry factory for creating Harry entities
     private HarryFactory harryFactory;
 
-    // Harry's bounding box size
-    // TODO Get the character width and height and multiply with asset scale
-    private static final float HARRY_WIDTH  = 20f;
-    private static final float HARRY_HEIGHT = 64f;
-
-    public static final float HARRY_OFFSET_X = 22f * ASSET_SCALE; // <- NEW OFFSET
-
+    // Zebra factory for creating Zebra entities
+    private ZebraFactory zebraFactory;
 
     @Override
     public void create() {
@@ -90,9 +97,17 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
         // --- Load tilemap & create renderer BEFORE world config ---
         int currentLevelNumber = 1; // Default to level 1
+        Level currentLevel = null;
+        Scenario currentScenario = null;
+
         if (levelContainer != null && levelContainer.getLevels().length > 0) {
-            Level level = levelContainer.getLevels()[0]; // Get first level for now
-            currentLevelNumber = level.getLevelNumber();
+            currentLevel = levelContainer.getLevels()[0]; // Get first level for now
+            currentLevelNumber = currentLevel.getLevelNumber();
+
+            // Get the first scenario for now
+            if (!currentLevel.getScenarios().isEmpty()) {
+                currentScenario = currentLevel.getScenarios().get(0);
+            }
         }
 
         final TiledMap tileMap = loadBridgeFallMap(currentLevelNumber);
@@ -100,51 +115,73 @@ public class Bridge2FarGame extends ApplicationAdapter {
             Gdx.app.error("BridgeFallGame", "Failed to load bridgefall_" + currentLevelNumber + " TMX");
             return; // Exit on failure
         }
+
+        // Modify the tilemap based on scenario data before creating systems
+        if (currentScenario != null) {
+            modifyTileMapBasedOnScenario(tileMap, currentScenario);
+        }
+
         mapRenderer = new OrthogonalTiledMapRenderer(tileMap, ASSET_SCALE, spriteBatch);
 
         // --- NEW: Initialize the single Jbump World ---
         jbumpWorld = new com.dongbat.jbump.World<>();
 
         // --- ECS world config ---
+        // Create a Set to hold all systems
+        Set<BaseSystem> systemSet = new LinkedHashSet<>();
+
+        // 1. Background layers
+        systemSet.add(new MapBackgroundRenderSystem(
+            mapRenderer,
+            camera,
+            "platform"
+        ));
+
+        // 2. Jbump World Initialization (MUST run first to populate collision geometry)
+        // Use the single jbumpWorld instance
+        systemSet.add(new JbumpMapInitializationSystem(tileMap, jbumpWorld, "ground"));
+
+        // 3. Character movement & rendering
+        // Use the single jbumpWorld instance
+        systemSet.add(new CharacterMovementSystem(jbumpWorld));
+        systemSet.add(new JbumpActionSyncSystem(jbumpWorld)); // Sync jbump colliders for action-based movement (zebras)
+        systemSet.add(new HarryDeathSystem(jbumpWorld));
+        systemSet.add(new ActionSystem());
+        systemSet.add(new ZebraStateSystem());
+        systemSet.add(new CharacterRenderSystem(spriteBatch, camera));
+
+        // Debug system for zebra movement (disabled by default)
+        ZebraDebugSystem zebraDebugSystem = new ZebraDebugSystem(jbumpWorld);
+        systemSet.add(zebraDebugSystem);
+        // Uncomment to enable debug logging:
+        // zebraDebugSystem.setDebugEnabled(true);
+
+        // 4. Foreground layers
+        systemSet.add(new MapForegroundRenderSystem(
+            mapRenderer,
+            camera,
+            "beams", "bridge"
+        ));
+        if(DebugConfig.getInstance().isHidegroundlayer()){
+            systemSet.add(new CollisionDebugRenderSystem(tileMap, "ground"));
+        }
+        if(DebugConfig.getInstance().isBoundingboxes()){
+            systemSet.add(new JbumpDebugRenderSystem(jbumpWorld, new ShapeRenderer(), camera));
+        }
+        systemSet.add(new HarryJumpSoundSystem());
+        systemSet.add(new SoundSystem(new SoundManager(assetManager)));
+
+        // 5. HUD Systems (must run after core systems)
+        systemSet.add(new TimerSystem(assetManager, stage, levelContainer, artemisWorld));
+
+        // 6. Gameplay Systems
+        systemSet.add(new HarryLevelStartSystem(levelContainer));
+
+        // Convert Set to array for WorldConfigurationBuilder
+        BaseSystem[] baseSystems = systemSet.toArray(new BaseSystem[0]);
+
         WorldConfiguration config = new WorldConfigurationBuilder()
-            .with(
-                // 1. Background layers
-                new MapBackgroundRenderSystem(
-                    mapRenderer,
-                    camera,
-                    "platform"
-                ),
-
-                // 2. Jbump World Initialization (MUST run first to populate collision geometry)
-                // Use the single jbumpWorld instance
-                new JbumpMapInitializationSystem(tileMap, jbumpWorld,
-                    "ground"),
-
-                // 3. Character movement & rendering
-                // Use the single jbumpWorld instance
-                new CharacterMovementSystem(jbumpWorld),
-                new HarryDeathSystem(jbumpWorld),
-                new CharacterRenderSystem(spriteBatch, camera),
-
-                // 4. Foreground layers
-                new MapForegroundRenderSystem(
-                    mapRenderer,
-                    camera,
-                    "beams","bridge"
-                ),
-                new CollisionDebugRenderSystem(tileMap, "ground"),
-                new JbumpDebugRenderSystem(jbumpWorld,new ShapeRenderer(), camera),
-                new HarryJumpSoundSystem(),
-                new SoundSystem(new SoundManager(assetManager)),
-
-                // 5. HUD Systems (must run after core systems)
-                new TimerSystem(assetManager,
-                    stage,
-                    levelContainer,
-                    artemisWorld),
-                // 6. Gameplay Systems
-                new HarryLevelStartSystem(levelContainer)
-            )
+            .with(baseSystems)
             .build();
 
         artemisWorld = new World(config);
@@ -152,8 +189,40 @@ public class Bridge2FarGame extends ApplicationAdapter {
         // Set up system dependencies after world creation
         setupSystemDependencies();
 
-        // Initialize Harry factory
-        harryFactory = new HarryFactory(artemisWorld, jbumpWorld, HARRY_OFFSET_X, HARRY_WIDTH, HARRY_HEIGHT);
+        // Initialize Harry factory using CharacterConfig
+        CharacterConfig.CharacterData harryData = CharacterConfig.getInstance().getCharacterByName("harry");
+        if (harryData != null) {
+            harryFactory = new HarryFactory(
+                artemisWorld,
+                jbumpWorld,
+                harryData.getScaledHorizontalOffset(ASSET_SCALE),
+                harryData.getWidth(),
+                harryData.getHeight()
+            );
+            System.out.println("Initialized Harry factory with CharacterConfig data: " + harryData);
+        } else {
+            System.err.println("Harry character data not found in CharacterConfig, using default values");
+            harryFactory = new HarryFactory(artemisWorld, jbumpWorld,
+                22f * ASSET_SCALE,
+                20f,
+                64f);
+        }
+
+        // Initialize Zebra factory using CharacterConfig
+        CharacterConfig.CharacterData zebraData = CharacterConfig.getInstance().getCharacterByName("zebra");
+        if (zebraData != null) {
+            zebraFactory = new ZebraFactory(
+                artemisWorld,
+                jbumpWorld,
+                zebraData.getScaledHorizontalOffset(ASSET_SCALE),
+                zebraData.getWidth(),
+                zebraData.getHeight()
+            );
+            System.out.println("Initialized Zebra factory with CharacterConfig data: " + zebraData);
+        } else {
+            System.err.println("Zebra character data not found in CharacterConfig, using default values");
+            zebraFactory = new ZebraFactory(artemisWorld, jbumpWorld, 15f * ASSET_SCALE, 30f, 40f);
+        }
 
         // Create Harry entity with position from level data
         float startX = 0;
@@ -172,6 +241,13 @@ public class Bridge2FarGame extends ApplicationAdapter {
         }
 
         harryFactory.createHarry(startX, startY);
+
+        // Create a zebra entity at row 14 (base layer)
+        // Tile size is 32x32, row 14 is at Y = 14 * 32 = 448 pixels
+        // We position at the bottom of the tile, so add tile height: 448 + 32 = 480
+        float zebraX = 400f; // Start at X position 400
+        float zebraY = 120f;
+        zebraFactory.createZebra(zebraX, zebraY);
 
         // Start the first level (this will show scenario title and trigger level start logic)
         HarryLevelStartSystem levelStartSystem = artemisWorld.getSystem(HarryLevelStartSystem.class);
@@ -217,6 +293,185 @@ public class Bridge2FarGame extends ApplicationAdapter {
     }
 
     /**
+     * Modifies the tilemap based on scenario data.
+     * For HOLE cells (0), removes the tile. For SOLID cells (1), keeps the tile.
+     */
+    private void modifyTileMapBasedOnScenario(TiledMap tileMap, Scenario scenario) {
+        CollisionLayer groundLayer = scenario.getGroundLayer();
+        if (groundLayer == null) {
+            System.out.println("No groundLayer defined in scenario, skipping tilemap modification");
+            return;
+        }
+
+        int matchingRow = groundLayer.getMatchingRow();
+        List<Integer> cellStates = groundLayer.getCellStates();
+
+        if (cellStates == null || cellStates.isEmpty()) {
+            System.out.println("No cellStates defined in groundLayer, skipping tilemap modification");
+            return;
+        }
+
+        // Get the ground layer from the tilemap
+        TiledMapTileLayer groundTileLayer = (TiledMapTileLayer) tileMap.getLayers().get("ground");
+        if (groundTileLayer == null) {
+            System.out.println("Ground layer not found in tilemap, skipping modification");
+
+            // Debug: List all available layers
+            System.out.println("Available layers in tilemap:");
+            for (int i = 0; i < tileMap.getLayers().getCount(); i++) {
+                MapLayer layer = tileMap.getLayers().get(i);
+                System.out.println("  Layer " + i + ": " + layer.getName() + " (type: " + layer.getClass().getSimpleName() + ")");
+                
+                // Try to find ground layer by different names
+                if (layer.getName().toLowerCase().contains("ground")) {
+                    System.out.println("    -> This layer might be the ground layer!");
+                    if (layer instanceof TiledMapTileLayer) {
+                        groundTileLayer = (TiledMapTileLayer) layer;
+                        System.out.println("    -> Using this layer as ground layer");
+                    }
+                }
+            }
+            
+            if (groundTileLayer == null) {
+                return;
+            }
+        }
+
+        System.out.println("Modifying tilemap ground layer based on scenario data:");
+        System.out.println("Ground layer dimensions: " + groundTileLayer.getWidth() + "x" + groundTileLayer.getHeight());
+        System.out.println("Matching row: " + matchingRow);
+        System.out.println("Cell states count: " + cellStates.size());
+        System.out.println("Cell states: " + cellStates);
+
+        // Debug: Check if the matching row is within bounds
+        if (matchingRow >= groundTileLayer.getHeight()) {
+            System.out.println("ERROR: Matching row " + matchingRow + " is out of bounds! Ground layer height is " + groundTileLayer.getHeight());
+            return;
+        }
+
+        // Debug: Check a few cells in the Tiled row to see if they exist
+        // First calculate the actual row for debugging
+        int debugRow = groundTileLayer.getHeight() - 1 - matchingRow;
+        System.out.println("Checking cells in Tiled row " + matchingRow + " (LibGDX row " + debugRow + ":");
+        for (int x = 0; x < Math.min(5, groundTileLayer.getWidth()); x++) {
+            TiledMapTileLayer.Cell cell = groundTileLayer.getCell(x, debugRow);
+            System.out.println("  Cell (" + x + ", " + debugRow + "): " + (cell == null ? "null" : "exists"));
+        }
+
+        // Debug: Try to find which rows actually have cells (using LibGDX coordinates)
+        System.out.println("Scanning for non-null cells in ground layer (LibGDX coordinates):");
+        boolean foundCells = false;
+        for (int y = 0; y < Math.min(10, groundTileLayer.getHeight()); y++) {
+            for (int x = 0; x < Math.min(5, groundTileLayer.getWidth()); x++) {
+                TiledMapTileLayer.Cell cell = groundTileLayer.getCell(x, y);
+                if (cell != null) {
+                    int tiledY = groundTileLayer.getHeight() - 1 - y;
+                    System.out.println("  Found cell at LibGDX (" + x + ", " + y + ") = Tiled (" + x + ", " + tiledY + ")");
+                    foundCells = true;
+                }
+            }
+        }
+
+        if (!foundCells) {
+            System.out.println("  No cells found in the first 10 LibGDX rows!");
+        }
+
+        // Determine the actual row to use (handle Tiled vs LibGDX coordinate system differences)
+        // Tiled: Y=0 at top, Y increases downward
+        // LibGDX: Y=0 at bottom, Y increases upward
+        // So we need to invert the row number
+        int actualRow = groundTileLayer.getHeight() - 1 - matchingRow;
+
+        System.out.println("Tiled row " + matchingRow + " maps to LibGDX row " + actualRow);
+
+        // Safety check for the inverted row
+        if (actualRow < 0 || actualRow >= groundTileLayer.getHeight()) {
+            System.out.println("ERROR: Inverted row " + actualRow + " is out of bounds! Ground layer height is " + groundTileLayer.getHeight());
+            return;
+        }
+        
+        // Debug: Print initial state of the row before modification
+        System.out.println("Initial state of row " + actualRow + " before modification:");
+        int initialHoleCount = 0;
+        int initialSolidCount = 0;
+        for (int x = 0; x < Math.min(10, groundTileLayer.getWidth()); x++) {
+            TiledMapTileLayer.Cell initialCell = groundTileLayer.getCell(x, actualRow);
+            if (initialCell == null) {
+                initialHoleCount++;
+                System.out.println("  Cell (" + x + ", " + actualRow + "): null (HOLE)");
+            } else {
+                initialSolidCount++;
+                System.out.println("  Cell (" + x + ", " + actualRow + "): tile present (SOLID/FATAL)");
+            }
+        }
+        System.out.println("Initial state: " + initialHoleCount + " holes, " + initialSolidCount + " solids");
+
+        // Modify the tiles based on cell states
+        int changesMade = 0;
+        for (int x = 0; x < cellStates.size(); x++) {
+            if (x >= groundTileLayer.getWidth()) {
+                System.out.println("Cell state index " + x + " exceeds ground layer width " + groundTileLayer.getWidth());
+                break;
+            }
+
+            int cellState = cellStates.get(x);
+            CollisionType collisionType = CollisionType.fromValue(cellState);
+
+            // Only modify cells in the matching row
+            TiledMapTileLayer.Cell cell = groundTileLayer.getCell(x, actualRow);
+
+            boolean cellChanged = false;
+            if (cell != null) {
+                if (collisionType == CollisionType.HOLE) {
+                    // Remove the tile for HOLE
+                    groundTileLayer.setCell(x, actualRow, null);
+                    System.out.println("Removed tile at (" + x + ", " + actualRow + ") - HOLE");
+                    cellChanged = true;
+                    changesMade++;
+                } else if (collisionType == CollisionType.SOLID) {
+                    // Keep the tile for SOLID (do nothing, it's already there)
+                    System.out.println("Kept tile at (" + x + ", " + actualRow + ") - SOLID");
+                } else if (collisionType == CollisionType.FATAL) {
+                    // For FATAL, we could add special handling if needed
+                    // For now, treat it like SOLID
+                    System.out.println("Kept tile at (" + x + ", " + actualRow + ") - FATAL (treated as SOLID)");
+                }
+            } else {
+                // Cell is null, but we might need to add a tile for SOLID or FATAL
+                if (collisionType == CollisionType.SOLID || collisionType == CollisionType.FATAL) {
+                    // We need to add a tile here, but we don't have a reference to the tile
+                    // This is a problem - we can't create new tiles without knowing what tile to use
+                    System.out.println("Cell at (" + x + ", " + actualRow + ") is null but should be " + collisionType + " - cannot add tile without tile reference");
+                } else {
+                    System.out.println("Cell at (" + x + ", " + actualRow + ") is null - no action needed for HOLE");
+                }
+            }
+        }
+
+        // Debug: Print the final state of the modified row
+        System.out.println("Final state of modified row " + actualRow + " (" + changesMade + " changes made):");
+        int finalHoleCount = 0;
+        int finalSolidCount = 0;
+        for (int x = 0; x < Math.min(10, groundTileLayer.getWidth()); x++) {
+            TiledMapTileLayer.Cell finalCell = groundTileLayer.getCell(x, actualRow);
+            if (finalCell == null) {
+                finalHoleCount++;
+                System.out.println("  Cell (" + x + ", " + actualRow + "): null (HOLE)");
+            } else {
+                finalSolidCount++;
+                System.out.println("  Cell (" + x + ", " + actualRow + "): tile present (SOLID/FATAL)");
+            }
+        }
+        System.out.println("Final state: " + finalHoleCount + " holes, " + finalSolidCount + " solids");
+        
+        // Summary of changes
+        System.out.println("Tilemap modification completed. " + changesMade + " cells were modified.");
+        if (changesMade == 0) {
+            System.out.println("WARNING: No cells were modified! This might indicate an issue with the layer or cell states.");
+        }
+    }
+
+    /**
      * Set up system dependencies after world creation.
      */
     private void setupSystemDependencies() {
@@ -224,17 +479,26 @@ public class Bridge2FarGame extends ApplicationAdapter {
         HarryLevelStartSystem levelStartSystem = artemisWorld.getSystem(HarryLevelStartSystem.class);
         TimerSystem timerSystem = artemisWorld.getSystem(TimerSystem.class);
         HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
+        CharacterRenderSystem renderSystem = artemisWorld.getSystem(CharacterRenderSystem.class);
 
         if (levelStartSystem != null && timerSystem != null) {
             levelStartSystem.setTimerSystem(timerSystem);
-            
+
             // Set up death system for timer reset and scenario title display on revival
             if (deathSystem != null) {
                 deathSystem.setTimerSystem(timerSystem);
                 deathSystem.setLevelContainer(levelContainer);
                 deathSystem.setCurrentLevelIndex(0); // Start with level 1 (index 0)
+
+                // Configure character data from CharacterConfig
+                deathSystem.setCharacterDataFromConfig(ASSET_SCALE);
             }
-            
+
+            // Configure character render system from CharacterConfig
+            if (renderSystem != null) {
+                renderSystem.configureFromCharacterConfig();
+            }
+
             Gdx.app.log("Bridge2FarGame", "Set up system dependencies successfully");
         } else {
             Gdx.app.error("Bridge2FarGame", "Failed to set up system dependencies");

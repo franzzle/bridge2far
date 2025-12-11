@@ -1,0 +1,14 @@
+[
+  {
+    "name": "harry",
+    "width" : 30,
+    "height" : 64,
+    "horizontalOffset" : 24
+  },
+  {
+    "name": "zebra",
+    "width" : 20,
+    "height" : 64,
+    "horizontalOffset" : 30
+  }
+]

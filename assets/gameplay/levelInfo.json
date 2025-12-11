@@ -1,16 +1,27 @@
 {
+  "systemdefaults" : {
+    "moveSpeed" : 120,
+    "jumpSpeed" : 260,
+    "gravity" : -600,
+    "spawnX" : 20,
+    "spawnY" : 700,
+    "timeLimit" : 30,
+    "dyingDuration" : 2,
+    "diedDuration" : 1,
+    "timerDecrementAmount" : 1
+  },
   "levels": [
     {
       "levelNumber": 1,
       "scenarios": [
         {
-          "title": "Run Forest, Run!",
-          "timeLimit": 20,
-          "startingPositionX" : 0,
+          "title": "Leaps of faith",
+          "timeLimit": 30,
+          "startingPositionX" : 20,
           "startingPositionY" : 700,
           "groundLayer": {
             "matchingRow" : 9,
-            "cellStates" : [1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1]
+            "cellStates" : [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1]
           },
           "baseLayer": {
             "matchingRow" : 14,
@@ -23,10 +34,10 @@
       "levelNumber": 2,
       "scenarios": [
         {
-          "title": "Level 2 Challenge",
-          "timeLimit": 30,
-          "startingPositionX" : 50,
-          "startingPositionY" : 800,
+          "title": "Run Forest, Run!",
+          "timeLimit": 20,
+          "startingPositionX" : 20,
+          "startingPositionY" : 700,
           "groundLayer": {
             "matchingRow" : 9,
             "cellStates" : [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1]
