@@ -1,6 +1,8 @@
 package com.pimpedpixel.games.systems.gameplay;
 
 import com.artemis.BaseSystem;
+import com.artemis.ComponentMapper;
+import com.artemis.EntitySubscription;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
@@ -9,6 +11,10 @@ import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
 import com.pimpedpixel.games.gameplay.*;
 import com.pimpedpixel.games.systems.characters.JbumpMapInitializationSystem;
+import com.pimpedpixel.games.systems.characters.HarryStateComponent;
+import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
+import com.pimpedpixel.games.systems.characters.PhysicsComponent;
+import com.pimpedpixel.games.systems.characters.TransformComponent;
 
 import java.util.*;
 
@@ -24,6 +30,10 @@ public class LevelLoadingSystem extends BaseSystem {
     private final LevelLoader.LevelContainer levelContainer;
     private com.badlogic.gdx.assets.AssetManager assetManager;
     private com.artemis.World artemisWorld;
+    private ComponentMapper<TransformComponent> mTransform;
+    private ComponentMapper<JbumpItemComponent> mJbumpItem;
+    private ComponentMapper<HarryStateComponent> mHarryState;
+    private ComponentMapper<PhysicsComponent> mPhysics;
 
     // Character dimensions for Harry (needed for Jbump collider setup)
     private final float harryOffsetX;
@@ -146,6 +156,9 @@ public class LevelLoadingSystem extends BaseSystem {
 
             // Notify systems of the level change
             notifySystemsOfLevelChange();
+
+            // Move Harry to the new scenario start position
+            resetHarryToScenarioStart();
 
             System.out.println("Level " + levelIndex + ", scenario " + scenarioIndex + " loaded successfully");
 
@@ -334,6 +347,77 @@ public class LevelLoadingSystem extends BaseSystem {
         scenarioState.resetTreasureFoundFlag();
 
         System.out.println("Notified systems of level change to level " + currentLevelIndex + ", scenario " + currentScenarioIndex);
+    }
+
+    /**
+     * Move Harry's transform and jbump collider to the new scenario start position.
+     */
+    private void resetHarryToScenarioStart() {
+        if (artemisWorld == null || levelContainer == null || levelContainer.getLevels().length == 0) {
+            System.out.println("LevelLoadingSystem: Cannot reset Harry position (missing world or levels)");
+            return;
+        }
+
+        Level[] levels = levelContainer.getLevels();
+        if (currentLevelIndex < 0 || currentLevelIndex >= levels.length) {
+            System.out.println("LevelLoadingSystem: Current level index out of bounds, skipping Harry reset");
+            return;
+        }
+
+        Level level = levels[currentLevelIndex];
+        if (level == null || level.getScenarios().isEmpty()) {
+            System.out.println("LevelLoadingSystem: No scenarios for current level, skipping Harry reset");
+            return;
+        }
+
+        int safeScenarioIndex = Math.max(0, Math.min(currentScenarioIndex, level.getScenarios().size() - 1));
+        Scenario scenario = level.getScenarios().get(safeScenarioIndex);
+        if (scenario == null) {
+            System.out.println("LevelLoadingSystem: Scenario is null, skipping Harry reset");
+            return;
+        }
+
+        float startX = scenario.getStartingPositionX();
+        float startY = scenario.getStartingPositionY();
+
+        EntitySubscription harrySub = artemisWorld.getAspectSubscriptionManager().get(
+            com.artemis.Aspect.all(HarryStateComponent.class, TransformComponent.class, JbumpItemComponent.class)
+        );
+
+        int[] ids = harrySub.getEntities().getData();
+        int size = harrySub.getEntities().size();
+        for (int i = 0; i < size; i++) {
+            int entityId = ids[i];
+            TransformComponent t = mTransform.get(entityId);
+            JbumpItemComponent j = mJbumpItem.get(entityId);
+            HarryStateComponent h = mHarryState.get(entityId);
+            PhysicsComponent p = mPhysics.get(entityId);
+
+            if (t == null || j == null || j.item == null) {
+                continue;
+            }
+
+            t.x = startX;
+            t.y = startY;
+
+            if (p != null) {
+                p.vx = 0;
+                p.vy = 0;
+                p.onGround = false;
+            }
+
+            jbumpWorld.update(j.item, startX + harryOffsetX, startY, harryWidth, harryHeight);
+
+            if (h != null) {
+                h.state = com.pimpedpixel.games.systems.characters.HarryState.RESTING;
+                h.stateTime = 0f;
+                h.justJumped = false;
+            }
+
+            System.out.println("LevelLoadingSystem: Reset Harry entity " + entityId +
+                " to scenario start (" + startX + ", " + startY + ")");
+            break; // Only one Harry expected
+        }
     }
 
     /**
