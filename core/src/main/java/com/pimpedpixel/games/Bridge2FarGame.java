@@ -160,7 +160,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         systemSet.add(new MapForegroundRenderSystem(
             mapRenderer,
             camera,
-            "beams", "bridge"
+            "beams", "bridge", "rewards"
         ));
         if(DebugConfig.getInstance().isHidegroundlayer()){
             systemSet.add(new CollisionDebugRenderSystem(tileMap, "ground"));
