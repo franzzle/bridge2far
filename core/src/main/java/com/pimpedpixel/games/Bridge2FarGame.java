@@ -29,10 +29,12 @@ import com.pimpedpixel.games.systems.characters.ZebraFactory;
 import com.pimpedpixel.games.systems.characters.ZebraStateSystem;
 import com.pimpedpixel.games.systems.characters.ActionSystem;
 import com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem;
+import com.pimpedpixel.games.systems.characters.JbumpMapInitializationSystem;
 import com.pimpedpixel.games.systems.debug.ZebraDebugSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryDeathSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryLevelStartSystem;
+import com.pimpedpixel.games.systems.gameplay.LevelLoadingSystem;
 import com.pimpedpixel.games.systems.gameplay.LevelProgressionSystem;
 import com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
@@ -186,6 +188,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
         // 6. Gameplay Systems
         systemSet.add(new HarryLevelStartSystem(levelContainer));
+        systemSet.add(new LevelLoadingSystem(jbumpWorld, levelContainer, harryOffsetX, harryWidth, harryHeight));
 
         // Convert Set to array for WorldConfigurationBuilder
         BaseSystem[] baseSystems = systemSet.toArray(new BaseSystem[0]);
@@ -498,6 +501,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         TimerSystem timerSystem = artemisWorld.getSystem(TimerSystem.class);
         HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
         LevelProgressionSystem levelProgressionSystem = artemisWorld.getSystem(LevelProgressionSystem.class);
+        LevelLoadingSystem levelLoadingSystem = artemisWorld.getSystem(LevelLoadingSystem.class);
         CharacterRenderSystem renderSystem = artemisWorld.getSystem(CharacterRenderSystem.class);
         BloodRenderSystem bloodRenderSystem = artemisWorld.getSystem(BloodRenderSystem.class);
 
@@ -518,10 +522,28 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 deathSystem.setBloodFactory(bloodFactory);
             }
 
+            // Set up level loading system
+            if (levelLoadingSystem != null) {
+                levelLoadingSystem.setLevelStartSystem(levelStartSystem);
+                levelLoadingSystem.setDeathSystem(deathSystem);
+                levelLoadingSystem.setAssetManager(assetManager); // Set asset manager for tilemap loading
+                
+                // Get JbumpMapInitializationSystem for level loading
+                JbumpMapInitializationSystem jbumpMapInitSystem = artemisWorld.getSystem(JbumpMapInitializationSystem.class);
+                if (jbumpMapInitSystem != null) {
+                    levelLoadingSystem.setJbumpMapInitSystem(jbumpMapInitSystem);
+                }
+            }
+
             // Set up level progression system
             if (levelProgressionSystem != null) {
                 levelProgressionSystem.setLevelStartSystem(levelStartSystem);
                 levelProgressionSystem.setDeathSystem(deathSystem);
+                
+                // Set the level loading system for level progression
+                if (levelLoadingSystem != null) {
+                    levelProgressionSystem.setLevelLoadingSystem(levelLoadingSystem);
+                }
             }
 
             // Configure character render system from CharacterConfig

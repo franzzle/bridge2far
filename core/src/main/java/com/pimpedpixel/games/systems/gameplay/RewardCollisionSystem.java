@@ -97,24 +97,18 @@ public class RewardCollisionSystem extends IteratingSystem {
                     // Get the reward position and scale it to match game coordinates
                     float rewardX = mapObject.getProperties().get("x", Float.class) * assetScale;
                     float rewardY = mapObject.getProperties().get("y", Float.class) * assetScale;
-                    
+
                     // Create a reasonable bounding box for the reward (point objects need dimensions)
                     // Use a 32x32 pixel area around the reward point
                     Rectangle rewardBounds = new Rectangle(rewardX, rewardY, 32f * assetScale, 32f * assetScale);
-                    
-                    // Debug output to help with collision debugging
-                    System.out.println("Harry bounds: " + harryBounds);
-                    System.out.println("Reward bounds: " + rewardBounds);
-                    System.out.println("Harry position: " + x + ", " + y);
-                    System.out.println("Reward position: " + rewardX + ", " + rewardY);
-                    
+
                     // Check if Harry's bounding box overlaps with the reward object
                     if (harryBounds.overlaps(rewardBounds)) {
                         playUnlockSound(entityId);
-                        
+
                         // Record treasure found in scenario state
                         scenarioState.recordTreasureFound();
-                        
+
                         rewardCollected = true;
                         System.out.println("Harry collected reward! Playing unlock sound.");
                         break; // Only collect one reward at a time

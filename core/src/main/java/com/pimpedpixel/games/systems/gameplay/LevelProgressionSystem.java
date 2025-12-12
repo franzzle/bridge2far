@@ -28,6 +28,7 @@ public class LevelProgressionSystem extends IteratingSystem {
     private final float harryHeight;
     private HarryLevelStartSystem levelStartSystem;
     private HarryDeathSystem deathSystem;
+    private LevelLoadingSystem levelLoadingSystem;
     
     public LevelProgressionSystem(LevelLoader.LevelContainer levelContainer, 
                                  World<Object> jbumpWorld, 
@@ -52,6 +53,13 @@ public class LevelProgressionSystem extends IteratingSystem {
      */
     public void setDeathSystem(HarryDeathSystem deathSystem) {
         this.deathSystem = deathSystem;
+    }
+    
+    /**
+     * Set the level loading system reference
+     */
+    public void setLevelLoadingSystem(LevelLoadingSystem levelLoadingSystem) {
+        this.levelLoadingSystem = levelLoadingSystem;
     }
     
     /**
@@ -81,6 +89,7 @@ public class LevelProgressionSystem extends IteratingSystem {
         // Check if Harry is in RESTING state (after revival or level start)
         // This is where we check if treasure was found and handle level progression
         if (stateComp.state == HarryState.RESTING && stateComp.previousState != HarryState.RESTING) {
+            System.out.println("LevelProgressionSystem: Harry is RESTING, checking for level progression...");
             checkForLevelProgression(entityId);
         }
         
@@ -93,6 +102,9 @@ public class LevelProgressionSystem extends IteratingSystem {
      */
     private void checkForLevelProgression(int entityId) {
         ScenarioState scenarioState = ScenarioState.getInstance();
+        
+        System.out.println("LevelProgressionSystem.checkForLevelProgression: Checking if treasure was found...");
+        System.out.println("Treasure found this scenario: " + scenarioState.isTreasureFoundThisScenario());
         
         // Check if treasure was found in the current scenario
         if (scenarioState.isTreasureFoundThisScenario()) {
@@ -111,45 +123,42 @@ public class LevelProgressionSystem extends IteratingSystem {
                     System.out.println("All levels completed! Wrapping around to level 1.");
                 }
                 
-                // Update level indices
-                scenarioState.advanceToNextLevel();
-                
-                // Reset to first scenario for the new level (not continuing rotation)
-                scenarioState.setCurrentScenarioIndex(0);
-                
-                if (levelStartSystem != null) {
-                    levelStartSystem.setCurrentLevelIndex(nextLevelIndex);
-                }
-                
-                if (deathSystem != null) {
-                    deathSystem.setCurrentLevelIndex(nextLevelIndex);
-                }
-                
-                // Start the new level
-                if (levelStartSystem != null) {
-                    levelStartSystem.startLevel();
-                }
-                
-                // Move Harry to the new level's starting position immediately
-                // Since this is an IteratingSystem, we can process the entity directly
-                HarryStateComponent harryState = mHarryState.get(entityId);
-                TransformComponent transformComp = mTransform.get(entityId);
-                JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
-                
-                if (harryState != null && transformComp != null && jbumpItemComp != null) {
-                    // Get the starting position for the new level's first scenario
-                    float[] startPosition = getScenarioStartPosition(nextLevelIndex, 0);
-                    float newX = startPosition[0];
-                    float newY = startPosition[1];
+                // Load the new level using LevelLoadingSystem (handles everything)
+                if (levelLoadingSystem != null) {
+                    levelLoadingSystem.loadLevel(nextLevelIndex, 0); // Load level with first scenario
+                } else {
+                    // Fallback to manual updates if LevelLoadingSystem not available
+                    scenarioState.advanceToNextLevel();
+                    scenarioState.setCurrentScenarioIndex(0);
                     
-                    // Update Harry's position
-                    transformComp.x = newX;
-                    transformComp.y = newY;
+                    if (levelStartSystem != null) {
+                        levelStartSystem.setCurrentLevelIndex(nextLevelIndex);
+                    }
                     
-                    // Update Jbump collider position
-                    jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+                    if (deathSystem != null) {
+                        deathSystem.setCurrentLevelIndex(nextLevelIndex);
+                    }
                     
-                    System.out.println("Moved Harry to new level " + nextLevelIndex + " starting position: (" + newX + ", " + newY + ")");
+                    if (levelStartSystem != null) {
+                        levelStartSystem.startLevel();
+                    }
+                    
+                    // Move Harry to the new level's starting position
+                    HarryStateComponent harryState = mHarryState.get(entityId);
+                    TransformComponent transformComp = mTransform.get(entityId);
+                    JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
+                    
+                    if (harryState != null && transformComp != null && jbumpItemComp != null) {
+                        float[] startPosition = getScenarioStartPosition(nextLevelIndex, 0);
+                        float newX = startPosition[0];
+                        float newY = startPosition[1];
+                        
+                        transformComp.x = newX;
+                        transformComp.y = newY;
+                        jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+                        
+                        System.out.println("Moved Harry to new level " + nextLevelIndex + " starting position: (" + newX + ", " + newY + ")");
+                    }
                 }
                 
                 // Print statistics

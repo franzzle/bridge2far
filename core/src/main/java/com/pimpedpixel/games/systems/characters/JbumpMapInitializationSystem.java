@@ -17,9 +17,9 @@ import com.pimpedpixel.games.DesignResolution;
  */
 public class JbumpMapInitializationSystem extends BaseSystem {
 
-    private final TiledMap map;
+    private TiledMap map;
     private final World<Object> jbumpWorld;
-    private final String groundLayerName;
+    private String groundLayerName;
 
     private static final String STATIC_ITEM_IDENTIFIER = "MAP_COLLISION";
     private static final float SCALE = DesignResolution.ASSET_SCALE;
@@ -32,6 +32,50 @@ public class JbumpMapInitializationSystem extends BaseSystem {
         this.map = map;
         this.jbumpWorld = jbumpWorld;
         this.groundLayerName = groundLayerName;
+    }
+
+    /**
+     * Reinitialize the system with a new map (for level changes)
+     */
+    public void reinitializeWithNewMap(TiledMap newMap, String newGroundLayerName) {
+        // Clear existing collision geometry
+        clearCollisionGeometry();
+
+        // Update to new map and layer
+        this.map = newMap;
+        this.groundLayerName = newGroundLayerName;
+
+        // Rebuild collision geometry
+        rebuildCollisionGeometry();
+    }
+
+    /**
+     * Clear all collision geometry from the Jbump world
+     */
+    private void clearCollisionGeometry() {
+        if (jbumpWorld != null) {
+            // Remove all items with the static identifier
+            jbumpWorld.getItems().removeIf(item ->
+                STATIC_ITEM_IDENTIFIER.equals(item.userData));
+
+            Gdx.app.log("JbumpMapInitializationSystem",
+                "Cleared existing collision geometry");
+        }
+    }
+
+    /**
+     * Rebuild collision geometry with the new map
+     */
+    private void rebuildCollisionGeometry() {
+        Gdx.app.log("JbumpMapInitializationSystem",
+            "Rebuilding collision geometry with new map...");
+
+        MapLayers layers = map.getLayers();
+        TiledMapTileLayer ground = (TiledMapTileLayer) layers.get(groundLayerName);
+
+        if (exitIfMissing(ground, groundLayerName)) return;
+
+        addCollisionLayer(ground);
     }
 
     @Override
@@ -131,32 +175,32 @@ public class JbumpMapInitializationSystem extends BaseSystem {
      * from leaving the room and falling into the abyss.
      */
     private void addBoundaryWalls(int mapWidth, int mapHeight, float tileWidth, float tileHeight) {
-        
+
         // Calculate the total map dimensions
         float mapWidthPixels = mapWidth * tileWidth;
         float mapHeightPixels = mapHeight * tileHeight;
-        
+
         // Create boundary walls (1 tile thick)
         String boundaryIdentifier = "BOUNDARY_WALL";
-        
+
         // Left wall - placed just left of the map
         Item<Object> leftWall = new Item<>(boundaryIdentifier);
         jbumpWorld.add(leftWall, -tileWidth, 0, tileWidth, mapHeightPixels);
-        
+
         // Right wall - placed just right of the map
         Item<Object> rightWall = new Item<>(boundaryIdentifier);
         jbumpWorld.add(rightWall, mapWidthPixels, 0, tileWidth, mapHeightPixels);
-        
+
         // Bottom wall - placed just below the map
         Item<Object> bottomWall = new Item<>(boundaryIdentifier);
         jbumpWorld.add(bottomWall, 0, -tileHeight, mapWidthPixels, tileHeight);
-        
+
         // Top wall - placed just above the map
         Item<Object> topWall = new Item<>(boundaryIdentifier);
         jbumpWorld.add(topWall, 0, mapHeightPixels, mapWidthPixels, tileHeight);
-        
-        Gdx.app.log("JbumpMapInitializationSystem", 
-            "Added boundary walls: Left at x=" + (-tileWidth) + ", Right at x=" + mapWidthPixels + 
+
+        Gdx.app.log("JbumpMapInitializationSystem",
+            "Added boundary walls: Left at x=" + (-tileWidth) + ", Right at x=" + mapWidthPixels +
             ", Bottom at y=" + (-tileHeight) + ", Top at y=" + mapHeightPixels);
     }
 
