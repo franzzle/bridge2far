@@ -25,6 +25,7 @@ public class ZebraStateSystem extends IteratingSystem {
     private ComponentMapper<ActionComponent> mActions;
     private ComponentMapper<TransformComponent> mTransform;
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
+    private ComponentMapper<ZebraOverrideComponent> mOverride;
 
     private float stateChangeTimer = 0f;
     private float stateChangeInterval = 3f; // Change state every 3 seconds (faster for testing)
@@ -176,6 +177,12 @@ public class ZebraStateSystem extends IteratingSystem {
         // Update state time using Artemis delta time
         float deltaTime = world.getDelta();
         state.stateTime += deltaTime;
+
+        if (mOverride.has(entityId) && mOverride.get(entityId).deathSequenceActive) {
+            physics.vx = 0;
+            physics.vy = 0;
+            return;
+        }
 
         // Handle state transitions
         stateChangeTimer += deltaTime;

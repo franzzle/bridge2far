@@ -33,6 +33,7 @@ import com.pimpedpixel.games.systems.characters.JbumpMapInitializationSystem;
 import com.pimpedpixel.games.systems.debug.ZebraDebugSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryDeathSystem;
+import com.pimpedpixel.games.systems.gameplay.HarryDeathSequenceSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryLevelStartSystem;
 import com.pimpedpixel.games.systems.gameplay.LevelLoadingSystem;
 import com.pimpedpixel.games.systems.gameplay.LevelProgressionSystem;
@@ -168,6 +169,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         // Use the single jbumpWorld instance
         systemSet.add(new CharacterMovementSystem(jbumpWorld));
         systemSet.add(new JbumpActionSyncSystem(jbumpWorld)); // Sync jbump colliders for action-based movement (zebras)
+        systemSet.add(new HarryDeathSequenceSystem());
         systemSet.add(new HarryDeathSystem(jbumpWorld));
         systemSet.add(new ActionSystem());
         systemSet.add(new ZebraStateSystem(jbumpWorld));

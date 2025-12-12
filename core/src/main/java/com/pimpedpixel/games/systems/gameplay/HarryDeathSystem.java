@@ -26,7 +26,7 @@ public class HarryDeathSystem extends IteratingSystem {
     ComponentMapper<HarryStateComponent> mHarryState;
     ComponentMapper<TransformComponent> mTransform;
     ComponentMapper<JbumpItemComponent> mJbumpItem;
-    ComponentMapper<PlaySoundComponent> mPlaySound;
+    ComponentMapper<HarryDeathSequenceComponent> mDeathSequence;
 
     private final World<Object> jbumpWorld;
     private TimerSystem timerSystem; // Reference to timer system for resetting timer on revival
@@ -157,13 +157,6 @@ public class HarryDeathSystem extends IteratingSystem {
             if (stateComp.previousState != HarryState.DYING) {
                 stateComp.stateTime = 0f;
 
-                ScenarioState scenarioState = ScenarioState.getInstance();
-                if (!scenarioState.hasPlayedDeathGruntThisLevel()) {
-                    PlaySoundComponent playSound = mPlaySound.create(entityId);
-                    playSound.soundId = SoundId.GRUNT;
-                    scenarioState.markDeathGruntPlayedThisLevel();
-                }
-
                 // Use the orientation from when Harry started falling, or current orientation if not tracked
                 Direction bloodOrientation = (entityId == fallingHarryEntityId) ? fallingOrientation : stateComp.dir;
                 
@@ -173,6 +166,14 @@ public class HarryDeathSystem extends IteratingSystem {
                     System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ") with orientation: " + bloodOrientation);
                 } else {
                     System.err.println("Blood factory not set - cannot create blood animation");
+                }
+            }
+
+            if (mDeathSequence.has(entityId)) {
+                HarryDeathSequenceComponent seq = mDeathSequence.get(entityId);
+                if (seq != null && !seq.done) {
+                    stateComp.previousState = stateComp.state;
+                    return;
                 }
             }
 
