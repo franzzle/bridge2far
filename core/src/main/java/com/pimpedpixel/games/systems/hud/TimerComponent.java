@@ -79,6 +79,12 @@ public class TimerComponent extends Component {
         int seconds = getRemainingSeconds();
         int minutes = seconds / 60;
         int remainingSeconds = seconds % 60;
-        return String.format("%02d:%02d", minutes, remainingSeconds);
+        // Build MM:SS without String.format to stay GWT compatible
+        StringBuilder sb = new StringBuilder(5);
+        if (minutes < 10) sb.append('0');
+        sb.append(minutes).append(':');
+        if (remainingSeconds < 10) sb.append('0');
+        sb.append(remainingSeconds);
+        return sb.toString();
     }
 }
