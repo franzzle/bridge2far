@@ -54,7 +54,6 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
     protected void process(int entityId) {
         HarryStateComponent harryState = mHarryState.get(entityId);
         if (harryState.state != HarryState.DYING) {
-            restoreHarryHitbox(entityId);
             if (mDeathSequence.has(entityId)) {
                 mDeathSequence.remove(entityId);
             }
@@ -149,13 +148,11 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
                 Actions.run(() -> {
                     zebraState.state = ZebraState.SHREDDING;
                     zebraState.stateTime = 0f;
-                    disableHarryHitbox(seq.harryEntityId);
                 }),
                 Actions.delay(SHRED_DURATION_SECONDS),
                 Actions.run(() -> {
                     zebraState.state = ZebraState.GRAZING;
                     zebraState.stateTime = 0f;
-                    restoreHarryHitbox(seq.harryEntityId);
                     zebraOverride.deathSequenceDone = true;
                     zebraOverride.deathSequenceActive = false;
                 })
@@ -193,25 +190,6 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
         disabled.h = rect.h;
         disabled.disabled = true;
         jbumpWorld.remove(jbumpItem.item);
-    }
-
-    private void restoreHarryHitbox(int harryEntityId) {
-        if (harryEntityId < 0) {
-            return;
-        }
-
-        if (jbumpWorld == null || !mJbumpItem.has(harryEntityId) || !mDisabledCollider.has(harryEntityId)) {
-            return;
-        }
-
-        DisabledJbumpColliderComponent disabled = mDisabledCollider.get(harryEntityId);
-        JbumpItemComponent jbumpItem = mJbumpItem.get(harryEntityId);
-        if (disabled == null || !disabled.disabled || jbumpItem == null || jbumpItem.item == null) {
-            return;
-        }
-
-        jbumpWorld.add((com.dongbat.jbump.Item) jbumpItem.item, disabled.x, disabled.y, disabled.w, disabled.h);
-        disabled.disabled = false;
     }
 
     private int findClosestZebra(float harryX) {

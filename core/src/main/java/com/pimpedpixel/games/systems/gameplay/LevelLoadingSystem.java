@@ -15,6 +15,7 @@ import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.PhysicsComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
+import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
 
 import java.util.*;
@@ -35,6 +36,7 @@ public class LevelLoadingSystem extends BaseSystem {
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
     private ComponentMapper<HarryStateComponent> mHarryState;
     private ComponentMapper<PhysicsComponent> mPhysics;
+    private ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     // Character dimensions for Harry (needed for Jbump collider setup)
     private final float harryOffsetX;
@@ -421,6 +423,16 @@ public class LevelLoadingSystem extends BaseSystem {
                 p.vx = 0;
                 p.vy = 0;
                 p.onGround = false;
+            }
+
+            if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                if (disabled != null && disabled.disabled) {
+                    jbumpWorld.add((com.dongbat.jbump.Item) j.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                    mDisabledCollider.remove(entityId);
+                } else {
+                    mDisabledCollider.remove(entityId);
+                }
             }
 
             jbumpWorld.update(j.item, startX + harryOffsetX, startY, harryWidth, harryHeight);

@@ -198,11 +198,16 @@ public class HarryDeathSystem extends IteratingSystem {
                 if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
                     DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
                     if (disabled != null && disabled.disabled) {
-                        jbumpWorld.add((com.dongbat.jbump.Item) jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
-                        disabled.disabled = false;
+                        disabled.x = newX + harryOffsetX;
+                        disabled.y = newY;
+                        disabled.w = harryWidth;
+                        disabled.h = harryHeight;
+                    } else {
+                        jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
                     }
+                } else {
+                    jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
                 }
-                jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
 
                 System.out.println("Harry resurrected at scenario start position: (" + newX + ", " + newY + ")");
             }
@@ -231,11 +236,16 @@ public class HarryDeathSystem extends IteratingSystem {
             if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
                 DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
                 if (disabled != null && disabled.disabled) {
-                    jbumpWorld.add((com.dongbat.jbump.Item) jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
-                    disabled.disabled = false;
+                    disabled.x = newX + harryOffsetX;
+                    disabled.y = newY;
+                    disabled.w = harryWidth;
+                    disabled.h = harryHeight;
+                } else {
+                    jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
                 }
+            } else {
+                jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
             }
-            jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
 
             // Debug log for DIED state position updates
             System.out.println("Harry in DIED state - maintaining position at scenario start: (" + newX + ", " + newY + ")");
@@ -266,6 +276,15 @@ public class HarryDeathSystem extends IteratingSystem {
                 
                 stateComp.state = HarryState.RESTING;
                 stateComp.stateTime = 0f; // Reset state time
+
+                if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                    DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                    if (disabled != null && disabled.disabled) {
+                        jbumpWorld.add((com.dongbat.jbump.Item) jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                        jbumpWorld.update(jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                        mDisabledCollider.remove(entityId);
+                    }
+                }
 
                 // Reset timer when Harry revives and apply level start decrement
                 if (timerSystem != null) {
