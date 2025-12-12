@@ -33,7 +33,7 @@ public class CharacterMovementSystem extends IteratingSystem {
 
     // Custom CollisionFilter for the character (standard platformer behavior)
     private final static CollisionFilter playerFilter = (item, other) -> Response.slide;
-    
+
     // Add static initializer to verify playerFilter is properly initialized
     static {
         if (playerFilter == null) {
@@ -56,13 +56,13 @@ public class CharacterMovementSystem extends IteratingSystem {
         PhysicsComponent p = mPhysics.get(entityId);
         HarryStateComponent s = mState.get(entityId);
         JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
-        
+
         // Add null checks for critical components to prevent crashes during level transitions
         if (t == null || p == null || s == null || jbumpItemComp == null || jbumpItemComp.item == null) {
             System.err.println("CharacterMovementSystem: Missing critical components for entity " + entityId + " during level transition");
             return;
         }
-        
+
         Item<Integer> item = jbumpItemComp.item;
 
         // Add null check for item
@@ -103,6 +103,7 @@ public class CharacterMovementSystem extends IteratingSystem {
             p.vy = jumpImpulse;
             p.onGround = false;
             p.onZebraSupport = false;
+            p.lethalJump = jumpImpulse > jumpSpeed; // track boosted jump
             s.state = HarryState.JUMPING;
             s.stateTime = 0f;
             s.justJumped = true; // Flag to indicate a jump has just occurred
@@ -127,19 +128,20 @@ public class CharacterMovementSystem extends IteratingSystem {
         }
 
         Response.Result result = jbumpWorld.move(item, newX, newY, playerFilter);
-        
+
         // Add null check for result
         if (result == null) {
             System.err.println("CharacterMovementSystem: Jbump move result is null");
             return;
         }
-        
+
         t.x = result.goalX;
         t.y = result.goalY;
 
         // Check for ground collision with null safety
         boolean touchedGround = false;
         boolean landedOnZebra = false;
+        boolean lethalHeadHit = false;
         if (result.projectedCollisions != null) {
             for (int i = 0; i < result.projectedCollisions.size(); i++) {
                 Collision collision = result.projectedCollisions.get(i);
@@ -154,14 +156,39 @@ public class CharacterMovementSystem extends IteratingSystem {
                     }
                     p.vy = 0;
                     break;
+                } else if (collision != null && collision.normal.y < -0.001f && p.lethalJump && p.vy > 0) {
+                    // Hitting a block above while in lethal (boosted) jump: check row 9
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Item<Object> otherItem = (Item<Object>) collision.other;
+                        if (otherItem != null) {
+                            Rect rect = jbumpWorld.getRect(otherItem);
+                            float h = rect.h;
+                            if (h > 0) {
+                                int row = Math.round(rect.y / h);
+                                if (row == 5) {
+                                    lethalHeadHit = true;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (ClassCastException ignored) {
+                    }
                 }
             }
+        }
+
+        // Kill immediately if lethal head hit on row 9 while moving upward.
+        if (lethalHeadHit) {
+            s.state = HarryState.DYING;
+            return;
         }
 
         // Update ground status
         if (touchedGround) {
             p.onGround = true;
             p.onZebraSupport = landedOnZebra;
+            p.lethalJump = false; // landing clears lethal flag
             s.justJumped = false; // Reset the flag when landing
             if (Math.abs(p.vy) < 1f) {
                 p.vy = 0;
