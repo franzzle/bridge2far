@@ -18,6 +18,7 @@ public class CharacterMovementSystem extends IteratingSystem {
     private ComponentMapper<TransformComponent> mTransform;
     private ComponentMapper<PhysicsComponent> mPhysics;
     private ComponentMapper<HarryStateComponent> mState;
+    private ComponentMapper<ZebraStateComponent> mZebraState;
 
     // New Mapper for Jbump Item
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
@@ -75,6 +76,9 @@ public class CharacterMovementSystem extends IteratingSystem {
                                  s.state == HarryState.DYING ||
                                  s.state == HarryState.DIMINISHING ||
                                  s.state == HarryState.DIMINISHED;
+        // Track previous grounded state and whether we were falling to detect landings.
+        boolean wasOnGround = p.onGround;
+        boolean wasFalling = s.state == HarryState.FALLING;
 
         // --- INPUT ---
         boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT);
@@ -95,8 +99,10 @@ public class CharacterMovementSystem extends IteratingSystem {
 
         // Jump logic - only allow if not in blocked states
         if (jump && p.onGround && !movementBlocked) {
-            p.vy = jumpSpeed;
+            float jumpImpulse = p.onZebraSupport ? jumpSpeed * 3f : jumpSpeed;
+            p.vy = jumpImpulse;
             p.onGround = false;
+            p.onZebraSupport = false;
             s.state = HarryState.JUMPING;
             s.stateTime = 0f;
             s.justJumped = true; // Flag to indicate a jump has just occurred
@@ -133,11 +139,19 @@ public class CharacterMovementSystem extends IteratingSystem {
 
         // Check for ground collision with null safety
         boolean touchedGround = false;
+        boolean landedOnZebra = false;
         if (result.projectedCollisions != null) {
             for (int i = 0; i < result.projectedCollisions.size(); i++) {
                 Collision collision = result.projectedCollisions.get(i);
                 if (collision != null && collision.normal.y > 0.001f) {
                     touchedGround = true;
+                    Object otherUserData = collision.other != null ? collision.other.userData : null;
+                    if (otherUserData instanceof Integer) {
+                        int otherId = (Integer) otherUserData;
+                        if (mZebraState != null && mZebraState.has(otherId)) {
+                            landedOnZebra = true;
+                        }
+                    }
                     p.vy = 0;
                     break;
                 }
@@ -147,12 +161,14 @@ public class CharacterMovementSystem extends IteratingSystem {
         // Update ground status
         if (touchedGround) {
             p.onGround = true;
+            p.onZebraSupport = landedOnZebra;
             s.justJumped = false; // Reset the flag when landing
             if (Math.abs(p.vy) < 1f) {
                 p.vy = 0;
             }
         } else {
             p.onGround = false;
+            p.onZebraSupport = false;
         }
 
         // STATE MACHINE - only update states if not in blocked states
