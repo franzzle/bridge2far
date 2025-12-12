@@ -19,7 +19,7 @@ public class BloodAnimationsFactory {
             return;
         }
         
-        // Create flowing animation (frames 1-8)
+        // Create flowing animation (frames 1-8) - dynamic blood spreading
         TextureRegion[] flowingFrames = new TextureRegion[8];
         for (int i = 0; i < 8; i++) {
             TextureRegion frame = bloodAtlas.findRegion("blood-flowing-" + (i + 1));
@@ -32,7 +32,7 @@ public class BloodAnimationsFactory {
         anim.flowing = new Animation<>(FLOWING_FRAME_DURATION, flowingFrames);
         anim.flowing.setPlayMode(Animation.PlayMode.NORMAL);
 
-        // Create drying animation (frames 9-12) 
+        // Create drying animation (frames 9-12) - blood starting to dry
         TextureRegion[] dryingFrames = new TextureRegion[4];
         for (int i = 0; i < 4; i++) {
             TextureRegion frame = bloodAtlas.findRegion("blood-flowing-" + (i + 9));
@@ -45,13 +45,19 @@ public class BloodAnimationsFactory {
         anim.drying = new Animation<>(DRYING_FRAME_DURATION, dryingFrames);
         anim.drying.setPlayMode(Animation.PlayMode.NORMAL);
 
-        // Create dried animation (frame 13 - static)
-        TextureRegion driedFrame = bloodAtlas.findRegion("blood-flowing-13");
-        if (driedFrame == null) {
-            System.err.println("Missing blood dried frame: blood-flowing-13");
-            return;
+        // Create dried animation (frames 13-17) - fully dried blood pool
+        // Use frames 13-17 for a more varied dried appearance
+        TextureRegion[] driedFrames = new TextureRegion[5];
+        for (int i = 0; i < 5; i++) {
+            TextureRegion frame = bloodAtlas.findRegion("blood-flowing-" + (i + 13));
+            if (frame == null) {
+                System.err.println("Missing blood dried frame: blood-flowing-" + (i + 13));
+                return;
+            }
+            driedFrames[i] = frame;
         }
-        anim.dried = new Animation<>(DRIED_FRAME_DURATION, driedFrame);
-        anim.dried.setPlayMode(Animation.PlayMode.NORMAL);
+        // Use a very slow frame rate for dried state to create subtle variation
+        anim.dried = new Animation<>(DRIED_FRAME_DURATION * 2, driedFrames);
+        anim.dried.setPlayMode(Animation.PlayMode.LOOP);
     }
 }

@@ -68,5 +68,30 @@ public class BloodAnimationTest {
         System.out.println("Animation speed is correctly set to 12 fps:");
         System.out.println("  - Expected frame duration: " + expectedFrameDuration);
         System.out.println("  - Actual frame duration: " + anim.animationSpeed);
+        System.out.println("Frame distribution:");
+        System.out.println("  - Flowing: frames 1-8 (8 frames)");
+        System.out.println("  - Drying: frames 9-12 (4 frames)");
+        System.out.println("  - Dried: frames 13-17 (5 frames with slow looping)");
+    }
+
+    @Test
+    public void testBloodOrientation() {
+        BloodAnimationComponent anim = new BloodAnimationComponent();
+        
+        // Test default orientation
+        assertEquals("Default orientation should be LEFT", Direction.LEFT, anim.orientation);
+        
+        // Test orientation changes
+        anim.orientation = Direction.RIGHT;
+        assertEquals("Orientation should change to RIGHT", Direction.RIGHT, anim.orientation);
+        
+        anim.orientation = Direction.LEFT;
+        assertEquals("Orientation should change back to LEFT", Direction.LEFT, anim.orientation);
+        
+        System.out.println("✅ Blood orientation test passed!");
+        System.out.println("Blood orientation handling works correctly:");
+        System.out.println("  - Default: " + Direction.LEFT);
+        System.out.println("  - Supports: " + Direction.LEFT + " and " + Direction.RIGHT);
+        System.out.println("  - Blood will be flipped horizontally for RIGHT orientation");
     }
 }

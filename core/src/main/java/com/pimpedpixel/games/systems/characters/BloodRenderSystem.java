@@ -11,11 +11,13 @@ import com.pimpedpixel.games.DesignResolution;
 
 /**
  * Renders blood animations with crisp pixel-art scaling.
+ * Blood is rendered behind characters and can be flipped based on orientation.
  */
 public class BloodRenderSystem extends IteratingSystem {
 
     private ComponentMapper<TransformComponent> mTransform;
     private ComponentMapper<BloodAnimationComponent> mAnim;
+    private ComponentMapper<HarryStateComponent> mHarryState;
 
     private final SpriteBatch batch;
     private final OrthographicCamera camera;
@@ -70,7 +72,8 @@ public class BloodRenderSystem extends IteratingSystem {
 
         // Select the appropriate animation based on state
         Animation<TextureRegion> animation = selectAnimation(anim);
-        TextureRegion frame = animation.getKeyFrame(anim.stateTime, false); // No looping
+        boolean looping = (anim.state == BloodState.DRIED); // Only loop for dried state
+        TextureRegion frame = animation.getKeyFrame(anim.stateTime, looping);
 
         float scale = DesignResolution.CHARACTER_SCALE; // Use same scale as characters
 
@@ -81,8 +84,17 @@ public class BloodRenderSystem extends IteratingSystem {
         float drawX = Math.round(t.x);
         float drawY = Math.round(t.y);
 
+        // Handle orientation flipping
+        boolean flipX = (anim.orientation == Direction.RIGHT);
+        
         // Bottom-left anchor (blood should appear on the ground)
-        batch.draw(frame, drawX, drawY, width, height);
+        if (flipX) {
+            // Flip the blood horizontally for RIGHT orientation
+            batch.draw(frame, drawX + width, drawY, -width, height);
+        } else {
+            // Normal drawing for LEFT orientation
+            batch.draw(frame, drawX, drawY, width, height);
+        }
     }
 
     private Animation<TextureRegion> selectAnimation(BloodAnimationComponent anim) {

@@ -29,7 +29,7 @@ public class HarryDeathSystem extends IteratingSystem {
     private int currentLevelIndex = 0; // Track current level for scenario title display
     private static final float DYING_DURATION = 2.0f; // 2 seconds in DYING state
     private static final float DIED_DURATION = 1.0f;  // 1 second in DIED state before revival
-    
+
     // Blood factory for creating blood entities when Harry dies
     private BloodFactory bloodFactory;
 
@@ -127,11 +127,11 @@ public class HarryDeathSystem extends IteratingSystem {
             // Reset stateTime when first entering DYING state
             if (stateComp.previousState != HarryState.DYING) {
                 stateComp.stateTime = 0f;
-                
+
                 // Create blood at Harry's current position when he starts dying
                 if (bloodFactory != null) {
-                    bloodFactory.createBlood(transformComp.x, transformComp.y);
-                    System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ")");
+                    bloodFactory.createBlood(transformComp.x - 40, transformComp.y + 30, stateComp.dir);
+                    System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ") with orientation: " + stateComp.dir);
                 } else {
                     System.err.println("Blood factory not set - cannot create blood animation");
                 }

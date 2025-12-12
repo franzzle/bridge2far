@@ -23,19 +23,43 @@ public class BloodFactory {
     }
 
     /**
-     * Create a new blood entity at the specified position.
+     * Create a new blood entity at the specified position with orientation.
      *
      * @param x The starting X position
      * @param y The starting Y position (ground level where Harry fell)
+     * @param orientation The orientation (direction) for blood flipping
      * @return The entity ID of the created blood
      */
-    public int createBlood(float x, float y) {
+    public int createBlood(float x, float y, Direction orientation) {
         int entityId = artemisWorld.create();
 
         // 1. TRANSFORM
         TransformComponent t = artemisWorld.edit(entityId).create(TransformComponent.class);
         t.x = x;
         t.y = y;
+
+        // 2. ANIMATION
+        BloodAnimationComponent anim = artemisWorld.edit(entityId).create(BloodAnimationComponent.class);
+        anim.orientation = orientation;
+        BloodAnimationsFactory.initAnimations(anim, assetManager);
+
+        return entityId;
+    }
+
+    /**
+     * Create a new blood entity at the specified position.
+     *
+     * @param startingPosX The starting X position
+     * @param startingPosY The starting Y position (ground level where Harry fell)
+     * @return The entity ID of the created blood
+     */
+    public int createBlood(float startingPosX, float startingPosY) {
+        int entityId = artemisWorld.create();
+
+        // 1. TRANSFORM
+        TransformComponent transformComponent = artemisWorld.edit(entityId).create(TransformComponent.class);
+        transformComponent.x = startingPosX;
+        transformComponent.y = startingPosY;
 
         // 2. ANIMATION
         BloodAnimationComponent anim = artemisWorld.edit(entityId).create(BloodAnimationComponent.class);

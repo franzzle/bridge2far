@@ -11,4 +11,5 @@ public class BloodAnimationComponent extends Component {
     public BloodState state = BloodState.FLOWING;
     public float stateTime = 0f;
     public float animationSpeed = 1.0f / 12.0f; // 12 fps
+    public Direction orientation = Direction.LEFT; // Default orientation
 }
