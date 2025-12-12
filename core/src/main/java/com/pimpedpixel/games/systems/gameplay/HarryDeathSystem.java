@@ -9,6 +9,7 @@ import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
 import com.pimpedpixel.games.systems.characters.BloodFactory;
+import com.pimpedpixel.games.systems.characters.Direction;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
@@ -37,6 +38,10 @@ public class HarryDeathSystem extends IteratingSystem {
     private float harryOffsetX = 22f; // Default values
     private float harryWidth = DEFAULT_START_POSX;
     private float harryHeight = 64f;
+    
+    // Track Harry's orientation when he starts falling for accurate blood orientation
+    private int fallingHarryEntityId = -1;
+    private Direction fallingOrientation = Direction.LEFT;
 
     public HarryDeathSystem(World<Object> jbumpWorld) {
         super(Aspect.all(HarryStateComponent.class, TransformComponent.class, JbumpItemComponent.class));
@@ -122,16 +127,27 @@ public class HarryDeathSystem extends IteratingSystem {
         TransformComponent transformComp = mTransform.get(entityId);
         JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
 
+        // Track Harry's orientation when he starts falling
+        if (stateComp.state == HarryState.FALLING && stateComp.previousState != HarryState.FALLING) {
+            // Harry just started falling - capture his orientation
+            fallingHarryEntityId = entityId;
+            fallingOrientation = stateComp.dir;
+            System.out.println("Harry started falling with orientation: " + fallingOrientation);
+        }
+
         // Check if Harry is in DYING state
         if (stateComp.state == HarryState.DYING) {
             // Reset stateTime when first entering DYING state
             if (stateComp.previousState != HarryState.DYING) {
                 stateComp.stateTime = 0f;
 
+                // Use the orientation from when Harry started falling, or current orientation if not tracked
+                Direction bloodOrientation = (entityId == fallingHarryEntityId) ? fallingOrientation : stateComp.dir;
+                
                 // Create blood at Harry's current position when he starts dying
                 if (bloodFactory != null) {
-                    bloodFactory.createBlood(transformComp.x - 40, transformComp.y + 30, stateComp.dir);
-                    System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ") with orientation: " + stateComp.dir);
+                    bloodFactory.createBlood(transformComp.x - 40, transformComp.y + 30, bloodOrientation);
+                    System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ") with orientation: " + bloodOrientation);
                 } else {
                     System.err.println("Blood factory not set - cannot create blood animation");
                 }

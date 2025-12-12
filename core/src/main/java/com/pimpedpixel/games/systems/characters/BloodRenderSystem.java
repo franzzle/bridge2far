@@ -26,6 +26,10 @@ public class BloodRenderSystem extends IteratingSystem {
     private static final float FLOWING_DURATION = 1.0f;    // 1 second flowing
     private static final float DRYING_DURATION = 1.5f;    // 1.5 seconds drying
     private static final float DRIED_DURATION = 5.0f;     // 5 seconds dried before removal
+    
+    // Blood scaling constants
+    private static final float MAX_BLOOD_WIDTH = 128f;    // 2 cells × 64 pixels per cell
+    private static final float BLOOD_SCALE_FACTOR = 0.5f; // Scale factor relative to character scale
 
     public BloodRenderSystem(SpriteBatch batch, OrthographicCamera camera) {
         super(Aspect.all(TransformComponent.class, BloodAnimationComponent.class));
@@ -75,10 +79,12 @@ public class BloodRenderSystem extends IteratingSystem {
         boolean looping = (anim.state == BloodState.DRIED); // Only loop for dried state
         TextureRegion frame = animation.getKeyFrame(anim.stateTime, looping);
 
-        float scale = DesignResolution.CHARACTER_SCALE; // Use same scale as characters
+        // Use a reduced scale for blood to ensure it covers max 2 cells (2x64 pixels)
+        // The largest blood frame is 64px wide, so we scale it down appropriately
+        float bloodScale = DesignResolution.CHARACTER_SCALE * BLOOD_SCALE_FACTOR;
 
-        float width = frame.getRegionWidth() * scale;
-        float height = frame.getRegionHeight() * scale;
+        float width = frame.getRegionWidth() * bloodScale;
+        float height = frame.getRegionHeight() * bloodScale;
 
         // Snap to whole pixels to avoid blur
         float drawX = Math.round(t.x);
