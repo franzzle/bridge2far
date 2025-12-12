@@ -92,9 +92,6 @@ public class LevelProgressionSystem extends IteratingSystem {
             System.out.println("LevelProgressionSystem: Harry is RESTING, checking for level progression...");
             checkForLevelProgression(entityId);
         }
-        
-        // Update previousState for next frame
-        stateComp.previousState = stateComp.state;
     }
     
     /**
