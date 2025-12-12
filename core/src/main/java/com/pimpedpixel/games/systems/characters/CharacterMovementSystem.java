@@ -32,6 +32,13 @@ public class CharacterMovementSystem extends IteratingSystem {
 
     // Custom CollisionFilter for the character (standard platformer behavior)
     private final static CollisionFilter playerFilter = (item, other) -> Response.slide;
+    
+    // Add static initializer to verify playerFilter is properly initialized
+    static {
+        if (playerFilter == null) {
+            System.err.println("CharacterMovementSystem: playerFilter initialization failed!");
+        }
+    }
 
     // The groundY field is no longer needed, as collision is handled by the Jbump world.
 
@@ -47,7 +54,21 @@ public class CharacterMovementSystem extends IteratingSystem {
         TransformComponent t = mTransform.get(entityId);
         PhysicsComponent p = mPhysics.get(entityId);
         HarryStateComponent s = mState.get(entityId);
-        Item<Integer> item = mJbumpItem.get(entityId).item;
+        JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
+        
+        // Add null checks for critical components to prevent crashes during level transitions
+        if (t == null || p == null || s == null || jbumpItemComp == null || jbumpItemComp.item == null) {
+            System.err.println("CharacterMovementSystem: Missing critical components for entity " + entityId + " during level transition");
+            return;
+        }
+        
+        Item<Integer> item = jbumpItemComp.item;
+
+        // Add null check for item
+        if (item == null) {
+            System.err.println("CharacterMovementSystem: Jbump item is null for entity " + entityId);
+            return;
+        }
 
         // Check if movement should be blocked for certain states
         boolean movementBlocked = s.state == HarryState.DIED ||
@@ -93,18 +114,33 @@ public class CharacterMovementSystem extends IteratingSystem {
         float newY = t.y + dy;
 
         // JBUMP COLLISION RESOLUTION
+        // Add null check for playerFilter to prevent null pointer exceptions
+        if (playerFilter == null) {
+            System.err.println("CharacterMovementSystem: playerFilter is null, cannot perform collision resolution");
+            return;
+        }
+
         Response.Result result = jbumpWorld.move(item, newX, newY, playerFilter);
+        
+        // Add null check for result
+        if (result == null) {
+            System.err.println("CharacterMovementSystem: Jbump move result is null");
+            return;
+        }
+        
         t.x = result.goalX;
         t.y = result.goalY;
 
-        // Check for ground collision
+        // Check for ground collision with null safety
         boolean touchedGround = false;
-        for (int i = 0; i < result.projectedCollisions.size(); i++) {
-            Collision collision = result.projectedCollisions.get(i);
-            if (collision.normal.y > 0.001f) {
-                touchedGround = true;
-                p.vy = 0;
-                break;
+        if (result.projectedCollisions != null) {
+            for (int i = 0; i < result.projectedCollisions.size(); i++) {
+                Collision collision = result.projectedCollisions.get(i);
+                if (collision != null && collision.normal.y > 0.001f) {
+                    touchedGround = true;
+                    p.vy = 0;
+                    break;
+                }
             }
         }
 
