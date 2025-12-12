@@ -527,6 +527,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 levelLoadingSystem.setLevelStartSystem(levelStartSystem);
                 levelLoadingSystem.setDeathSystem(deathSystem);
                 levelLoadingSystem.setAssetManager(assetManager); // Set asset manager for tilemap loading
+                levelLoadingSystem.setArtemisWorld(artemisWorld); // Set Artemis world for system management
                 
                 // Get JbumpMapInitializationSystem for level loading
                 JbumpMapInitializationSystem jbumpMapInitSystem = artemisWorld.getSystem(JbumpMapInitializationSystem.class);

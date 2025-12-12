@@ -23,6 +23,7 @@ public class LevelLoadingSystem extends BaseSystem {
     private final com.dongbat.jbump.World<Object> jbumpWorld;
     private final LevelLoader.LevelContainer levelContainer;
     private com.badlogic.gdx.assets.AssetManager assetManager;
+    private com.artemis.World artemisWorld;
 
     // Character dimensions for Harry (needed for Jbump collider setup)
     private final float harryOffsetX;
@@ -53,6 +54,13 @@ public class LevelLoadingSystem extends BaseSystem {
      */
     public void setAssetManager(com.badlogic.gdx.assets.AssetManager assetManager) {
         this.assetManager = assetManager;
+    }
+
+    /**
+     * Set the Artemis world for system management
+     */
+    public void setArtemisWorld(com.artemis.World artemisWorld) {
+        this.artemisWorld = artemisWorld;
     }
 
     @Override
@@ -112,31 +120,156 @@ public class LevelLoadingSystem extends BaseSystem {
             deathSystem.setCurrentLevelIndex(levelIndex);
         }
 
-        // Load the TMX map for this level
-        String mapName = "bridgefall_" + (levelIndex + 1); // Levels are 1-indexed in filenames
-        TiledMap newTileMap = loadBridgeFallMap(mapName);
+        // PAUSE SYSTEMS THAT DEPEND ON JBUMP WORLD DURING TRANSITION
+        pauseDependentSystems();
 
-        if (newTileMap == null) {
-            Gdx.app.error("LevelLoadingSystem", "Failed to load tilemap for level " + levelIndex);
+        try {
+            // Load the TMX map for this level
+            String mapName = "bridgefall_" + (levelIndex + 1); // Levels are 1-indexed in filenames
+            TiledMap newTileMap = loadBridgeFallMap(mapName);
+
+            if (newTileMap == null) {
+                Gdx.app.error("LevelLoadingSystem", "Failed to load tilemap for level " + levelIndex);
+                return;
+            }
+
+            // Clean up old Jbump world
+            cleanupCurrentLevel();
+
+            // Store new tilemap
+            this.currentTileMap = newTileMap;
+
+            // Reinitialize Jbump world for the new level
+            initializeJbumpWorld(newTileMap);
+
+            // Apply scenario-specific modifications to the tilemap
+            applyScenarioModifications(newTileMap, scenarioIndex);
+
+            // Notify systems of the level change
+            notifySystemsOfLevelChange();
+
+            System.out.println("Level " + levelIndex + ", scenario " + scenarioIndex + " loaded successfully");
+
+        } finally {
+            // RESUME SYSTEMS AFTER TRANSITION COMPLETES
+            resumeDependentSystems();
+        }
+    }
+
+    /**
+     * Pause systems that depend on the Jbump world during level transitions
+     * This prevents null pointer exceptions when the Jbump world is being reinitialized
+     */
+    private void pauseDependentSystems() {
+        System.out.println("Pausing systems that depend on Jbump world during level transition");
+        
+        if (artemisWorld == null) {
+            System.out.println("Warning: Artemis world not set, cannot pause systems");
             return;
         }
+        
+        try {
+            // Get all systems from the Artemis world
+            // We'll pause systems that are likely to depend on Jbump world
+            
+            // Pause CharacterMovementSystem
+            com.pimpedpixel.games.systems.characters.CharacterMovementSystem movementSystem = 
+                artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.CharacterMovementSystem.class);
+            if (movementSystem != null) {
+                movementSystem.setEnabled(false);
+                System.out.println("Paused CharacterMovementSystem");
+            }
+            
+            // Pause JbumpActionSyncSystem
+            com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem actionSyncSystem = 
+                artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem.class);
+            if (actionSyncSystem != null) {
+                actionSyncSystem.setEnabled(false);
+                System.out.println("Paused JbumpActionSyncSystem");
+            }
+            
+            // Pause HarryDeathSystem
+            HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
+            if (deathSystem != null) {
+                deathSystem.setEnabled(false);
+                System.out.println("Paused HarryDeathSystem");
+            }
+            
+            // Pause RewardCollisionSystem
+            com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem rewardSystem = 
+                artemisWorld.getSystem(com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem.class);
+            if (rewardSystem != null) {
+                rewardSystem.setEnabled(false);
+                System.out.println("Paused RewardCollisionSystem");
+            }
+            
+            // Pause LevelProgressionSystem to prevent recursive level loading
+            LevelProgressionSystem progressionSystem = artemisWorld.getSystem(LevelProgressionSystem.class);
+            if (progressionSystem != null) {
+                progressionSystem.setEnabled(false);
+                System.out.println("Paused LevelProgressionSystem");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error pausing systems: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
-        // Clean up old Jbump world
-        cleanupCurrentLevel();
-
-        // Store new tilemap
-        this.currentTileMap = newTileMap;
-
-        // Reinitialize Jbump world for the new level
-        initializeJbumpWorld(newTileMap);
-
-        // Apply scenario-specific modifications to the tilemap
-        applyScenarioModifications(newTileMap, scenarioIndex);
-
-        // Notify systems of the level change
-        notifySystemsOfLevelChange();
-
-        System.out.println("Level " + levelIndex + ", scenario " + scenarioIndex + " loaded successfully");
+    /**
+     * Resume systems that were paused during level transitions
+     */
+    private void resumeDependentSystems() {
+        System.out.println("Resuming systems after level transition completes");
+        
+        if (artemisWorld == null) {
+            System.out.println("Warning: Artemis world not set, cannot resume systems");
+            return;
+        }
+        
+        try {
+            // Resume CharacterMovementSystem
+            com.pimpedpixel.games.systems.characters.CharacterMovementSystem movementSystem = 
+                artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.CharacterMovementSystem.class);
+            if (movementSystem != null) {
+                movementSystem.setEnabled(true);
+                System.out.println("Resumed CharacterMovementSystem");
+            }
+            
+            // Resume JbumpActionSyncSystem
+            com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem actionSyncSystem = 
+                artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem.class);
+            if (actionSyncSystem != null) {
+                actionSyncSystem.setEnabled(true);
+                System.out.println("Resumed JbumpActionSyncSystem");
+            }
+            
+            // Resume HarryDeathSystem
+            HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
+            if (deathSystem != null) {
+                deathSystem.setEnabled(true);
+                System.out.println("Resumed HarryDeathSystem");
+            }
+            
+            // Resume RewardCollisionSystem
+            com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem rewardSystem = 
+                artemisWorld.getSystem(com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem.class);
+            if (rewardSystem != null) {
+                rewardSystem.setEnabled(true);
+                System.out.println("Resumed RewardCollisionSystem");
+            }
+            
+            // Resume LevelProgressionSystem
+            LevelProgressionSystem progressionSystem = artemisWorld.getSystem(LevelProgressionSystem.class);
+            if (progressionSystem != null) {
+                progressionSystem.setEnabled(true);
+                System.out.println("Resumed LevelProgressionSystem");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error resuming systems: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**
