@@ -6,6 +6,8 @@ import com.artemis.systems.IteratingSystem;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.dongbat.jbump.*;
+import com.pimpedpixel.games.systems.gameplay.PlaySoundComponent;
+import com.pimpedpixel.games.systems.gameplay.SoundId;
 
 // New Jbump Imports
 
@@ -20,6 +22,7 @@ public class CharacterMovementSystem extends IteratingSystem {
     private ComponentMapper<HarryStateComponent> mState;
     private ComponentMapper<ZebraStateComponent> mZebraState;
     private ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
+    private ComponentMapper<PlaySoundComponent> mPlaySound;
 
     // New Mapper for Jbump Item
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
@@ -208,6 +211,8 @@ public class CharacterMovementSystem extends IteratingSystem {
             p.onZebraSupport = false;
         }
 
+        boolean landedThisFrame = !wasOnGround && touchedGround;
+
         // STATE MACHINE - only update states if not in blocked states
         if (!movementBlocked) {
             if (!p.onGround) {
@@ -232,6 +237,10 @@ public class CharacterMovementSystem extends IteratingSystem {
                 }
                 if(t.y < 130){
                     s.state = HarryState.DYING;
+                    if (landedThisFrame && wasFalling) {
+                        PlaySoundComponent playSound = mPlaySound.create(entityId);
+                        playSound.soundId = SoundId.BONEBREAK;
+                    }
                 }
             }
         }

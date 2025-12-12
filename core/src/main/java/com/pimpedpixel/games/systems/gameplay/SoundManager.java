@@ -8,12 +8,14 @@ import com.badlogic.gdx.audio.Sound;
 public class SoundManager {
     final Sound jumpingSound;
     final Sound unlockSound;
+    final Sound bonebreakSound;
     final Music gruntMusic;
     final Music shredMusic;
 
     public SoundManager(AssetManager assetManager) {
         jumpingSound = assetManager.get( "soundfx/jumping.ogg", Sound.class);
         unlockSound = assetManager.get( "soundfx/unlock.ogg", Sound.class);
+        bonebreakSound = assetManager.get("soundfx/bonebreak.ogg", Sound.class);
         gruntMusic = Gdx.audio.newMusic(Gdx.files.internal("soundfx/grunt.ogg"));
         shredMusic = Gdx.audio.newMusic(Gdx.files.internal("soundfx/shred.ogg"));
         shredMusic.setLooping(true);
@@ -34,6 +36,9 @@ public class SoundManager {
             case SHRED:
                 shredMusic.stop();
                 shredMusic.play();
+                return;
+            case BONEBREAK:
+                bonebreakSound.play();
                 return;
             default:
                 // Unknown sound ID, could play a default sound or log an error
