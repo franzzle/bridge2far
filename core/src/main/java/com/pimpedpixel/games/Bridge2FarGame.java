@@ -40,6 +40,8 @@ import com.pimpedpixel.games.systems.gameplay.LevelProgressionSystem;
 import com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
+import com.pimpedpixel.games.systems.gameplay.StopSoundSystem;
+import com.pimpedpixel.games.systems.gameplay.ZebraShreddingSoundSystem;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
 import com.pimpedpixel.games.gameplay.*;
 import com.pimpedpixel.games.config.CharacterConfig;
@@ -169,7 +171,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         // Use the single jbumpWorld instance
         systemSet.add(new CharacterMovementSystem(jbumpWorld));
         systemSet.add(new JbumpActionSyncSystem(jbumpWorld)); // Sync jbump colliders for action-based movement (zebras)
-        systemSet.add(new HarryDeathSequenceSystem());
+        systemSet.add(new HarryDeathSequenceSystem(jbumpWorld));
         systemSet.add(new HarryDeathSystem(jbumpWorld));
         systemSet.add(new ActionSystem());
         systemSet.add(new ZebraStateSystem(jbumpWorld));
@@ -197,7 +199,10 @@ public class Bridge2FarGame extends ApplicationAdapter {
             systemSet.add(new JbumpDebugRenderSystem(jbumpWorld, new ShapeRenderer(), camera));
         }
         systemSet.add(new HarryJumpSoundSystem());
-        systemSet.add(new SoundSystem(new SoundManager(assetManager)));
+        systemSet.add(new ZebraShreddingSoundSystem());
+        SoundManager soundManager = new SoundManager(assetManager);
+        systemSet.add(new StopSoundSystem(soundManager));
+        systemSet.add(new SoundSystem(soundManager));
 
         // 5. HUD Systems (must run after core systems)
         systemSet.add(new TimerSystem(assetManager, stage, levelContainer));

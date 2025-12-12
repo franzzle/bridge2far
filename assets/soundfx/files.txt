@@ -3,3 +3,4 @@ bonebreak
 unlock
 grunt
 dying
+shred

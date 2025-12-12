@@ -5,5 +5,6 @@ import com.artemis.Component;
 public class PlaySoundComponent extends Component {
     public SoundId soundId;
     public boolean blocking;
+    public boolean looping;
     public boolean started;
 }

@@ -9,6 +9,7 @@ import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
 import com.pimpedpixel.games.systems.characters.BloodFactory;
+import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.characters.Direction;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
@@ -27,6 +28,7 @@ public class HarryDeathSystem extends IteratingSystem {
     ComponentMapper<TransformComponent> mTransform;
     ComponentMapper<JbumpItemComponent> mJbumpItem;
     ComponentMapper<HarryDeathSequenceComponent> mDeathSequence;
+    ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     private final World<Object> jbumpWorld;
     private TimerSystem timerSystem; // Reference to timer system for resetting timer on revival
@@ -193,6 +195,13 @@ public class HarryDeathSystem extends IteratingSystem {
                 transformComp.y = newY;
 
                 // Also update the Jbump item position
+                if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                    DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                    if (disabled != null && disabled.disabled) {
+                        jbumpWorld.add((com.dongbat.jbump.Item) jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                        disabled.disabled = false;
+                    }
+                }
                 jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
 
                 System.out.println("Harry resurrected at scenario start position: (" + newX + ", " + newY + ")");
@@ -219,6 +228,13 @@ public class HarryDeathSystem extends IteratingSystem {
             transformComp.y = newY;
 
             // Also update the Jbump item position
+            if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                if (disabled != null && disabled.disabled) {
+                    jbumpWorld.add((com.dongbat.jbump.Item) jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                    disabled.disabled = false;
+                }
+            }
             jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
 
             // Debug log for DIED state position updates

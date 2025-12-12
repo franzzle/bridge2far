@@ -9,11 +9,14 @@ public class SoundManager {
     final Sound jumpingSound;
     final Sound unlockSound;
     final Music gruntMusic;
+    final Music shredMusic;
 
     public SoundManager(AssetManager assetManager) {
         jumpingSound = assetManager.get( "soundfx/jumping.ogg", Sound.class);
         unlockSound = assetManager.get( "soundfx/unlock.ogg", Sound.class);
         gruntMusic = Gdx.audio.newMusic(Gdx.files.internal("soundfx/grunt.ogg"));
+        shredMusic = Gdx.audio.newMusic(Gdx.files.internal("soundfx/shred.ogg"));
+        shredMusic.setLooping(true);
     }
 
     void play(SoundId soundId){
@@ -28,6 +31,10 @@ public class SoundManager {
                 gruntMusic.stop();
                 gruntMusic.play();
                 return;
+            case SHRED:
+                shredMusic.stop();
+                shredMusic.play();
+                return;
             default:
                 // Unknown sound ID, could play a default sound or log an error
                 System.err.println("Unknown sound ID: " + soundId);
@@ -36,9 +43,34 @@ public class SoundManager {
     }
 
     boolean isPlaying(SoundId soundId) {
-        if (soundId == SoundId.GRUNT) {
-            return gruntMusic.isPlaying();
+        switch (soundId) {
+            case GRUNT:
+                return gruntMusic.isPlaying();
+            case SHRED:
+                return shredMusic.isPlaying();
+            default:
+                return false;
         }
-        return false;
+    }
+
+    void startLoop(SoundId soundId) {
+        if (soundId == SoundId.SHRED) {
+            shredMusic.play();
+        } else {
+            play(soundId);
+        }
+    }
+
+    void stop(SoundId soundId) {
+        switch (soundId) {
+            case GRUNT:
+                gruntMusic.stop();
+                return;
+            case SHRED:
+                shredMusic.stop();
+                return;
+            default:
+                return;
+        }
     }
 }

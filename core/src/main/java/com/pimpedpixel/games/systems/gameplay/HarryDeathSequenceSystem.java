@@ -7,13 +7,17 @@ import com.artemis.systems.IteratingSystem;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.pimpedpixel.games.gameplay.ScenarioState;
 import com.pimpedpixel.games.systems.characters.ActionComponent;
+import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.characters.Direction;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
+import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
 import com.pimpedpixel.games.systems.characters.ZebraOverrideComponent;
 import com.pimpedpixel.games.systems.characters.ZebraState;
 import com.pimpedpixel.games.systems.characters.ZebraStateComponent;
+import com.dongbat.jbump.Rect;
+import com.dongbat.jbump.World;
 
 public class HarryDeathSequenceSystem extends IteratingSystem {
     private static final float ZEBRA_ATTACK_SPEED = 220f;
@@ -28,11 +32,15 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
     private ComponentMapper<ZebraStateComponent> mZebraState;
     private ComponentMapper<ActionComponent> mActions;
     private ComponentMapper<ZebraOverrideComponent> mZebraOverride;
+    private ComponentMapper<JbumpItemComponent> mJbumpItem;
+    private ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     private EntitySubscription zebraSubscription;
+    private final World<Object> jbumpWorld;
 
-    public HarryDeathSequenceSystem() {
+    public HarryDeathSequenceSystem(World<Object> jbumpWorld) {
         super(Aspect.all(HarryStateComponent.class, TransformComponent.class));
+        this.jbumpWorld = jbumpWorld;
     }
 
     @Override
@@ -46,6 +54,7 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
     protected void process(int entityId) {
         HarryStateComponent harryState = mHarryState.get(entityId);
         if (harryState.state != HarryState.DYING) {
+            restoreHarryHitbox(entityId);
             if (mDeathSequence.has(entityId)) {
                 mDeathSequence.remove(entityId);
             }
@@ -55,6 +64,7 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
         HarryDeathSequenceComponent seq = mDeathSequence.get(entityId);
         if (seq == null) {
             seq = mDeathSequence.create(entityId);
+            seq.harryEntityId = entityId;
             startSequence(entityId, harryState, seq);
         }
 
@@ -84,6 +94,7 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
             return;
         }
 
+        disableHarryHitbox(harryEntityId);
         maybePlayGruntOncePerLevel(harryEntityId, seq);
         startZebraApproachAndShred(harryTransform, seq);
     }
@@ -138,16 +149,69 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
                 Actions.run(() -> {
                     zebraState.state = ZebraState.SHREDDING;
                     zebraState.stateTime = 0f;
+                    disableHarryHitbox(seq.harryEntityId);
                 }),
                 Actions.delay(SHRED_DURATION_SECONDS),
                 Actions.run(() -> {
                     zebraState.state = ZebraState.GRAZING;
                     zebraState.stateTime = 0f;
+                    restoreHarryHitbox(seq.harryEntityId);
                     zebraOverride.deathSequenceDone = true;
                     zebraOverride.deathSequenceActive = false;
                 })
             )
         );
+    }
+
+    private void disableHarryHitbox(int harryEntityId) {
+        if (harryEntityId < 0) {
+            return;
+        }
+
+        if (jbumpWorld == null || !mJbumpItem.has(harryEntityId)) {
+            return;
+        }
+
+        JbumpItemComponent jbumpItem = mJbumpItem.get(harryEntityId);
+        if (jbumpItem == null || jbumpItem.item == null) {
+            return;
+        }
+
+        DisabledJbumpColliderComponent disabled = mDisabledCollider.create(harryEntityId);
+        if (disabled.disabled) {
+            return;
+        }
+
+        Rect rect = jbumpWorld.getRect(jbumpItem.item);
+        if (rect == null) {
+            return;
+        }
+
+        disabled.x = rect.x;
+        disabled.y = rect.y;
+        disabled.w = rect.w;
+        disabled.h = rect.h;
+        disabled.disabled = true;
+        jbumpWorld.remove(jbumpItem.item);
+    }
+
+    private void restoreHarryHitbox(int harryEntityId) {
+        if (harryEntityId < 0) {
+            return;
+        }
+
+        if (jbumpWorld == null || !mJbumpItem.has(harryEntityId) || !mDisabledCollider.has(harryEntityId)) {
+            return;
+        }
+
+        DisabledJbumpColliderComponent disabled = mDisabledCollider.get(harryEntityId);
+        JbumpItemComponent jbumpItem = mJbumpItem.get(harryEntityId);
+        if (disabled == null || !disabled.disabled || jbumpItem == null || jbumpItem.item == null) {
+            return;
+        }
+
+        jbumpWorld.add((com.dongbat.jbump.Item) jbumpItem.item, disabled.x, disabled.y, disabled.w, disabled.h);
+        disabled.disabled = false;
     }
 
     private int findClosestZebra(float harryX) {
@@ -177,4 +241,3 @@ public class HarryDeathSequenceSystem extends IteratingSystem {
         return bestId;
     }
 }
-

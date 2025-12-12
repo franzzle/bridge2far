@@ -19,6 +19,7 @@ public class CharacterMovementSystem extends IteratingSystem {
     private ComponentMapper<PhysicsComponent> mPhysics;
     private ComponentMapper<HarryStateComponent> mState;
     private ComponentMapper<ZebraStateComponent> mZebraState;
+    private ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     // New Mapper for Jbump Item
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
@@ -69,6 +70,15 @@ public class CharacterMovementSystem extends IteratingSystem {
         if (item == null) {
             System.err.println("CharacterMovementSystem: Jbump item is null for entity " + entityId);
             return;
+        }
+
+        if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+            DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+            if (disabled != null && disabled.disabled) {
+                p.vx = 0;
+                p.vy = 0;
+                return;
+            }
         }
 
         // Check if movement should be blocked for certain states
