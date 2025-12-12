@@ -1,0 +1,124 @@
+blood-flowing.png
+size: 292, 11
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+blood-flowing-1
+  rotate: false
+  xy: 267, 1
+  size: 7, 7
+  orig: 64, 32
+  offset: 3, 9
+  index: -1
+blood-flowing-2
+  rotate: false
+  xy: 276, 1
+  size: 15, 6
+  orig: 64, 32
+  offset: 4, 10
+  index: -1
+blood-flowing-3
+  rotate: false
+  xy: 248, 1
+  size: 17, 8
+  orig: 64, 32
+  offset: 3, 8
+  index: -1
+blood-flowing-4
+  rotate: false
+  xy: 211, 1
+  size: 35, 9
+  orig: 64, 32
+  offset: 1, 7
+  index: -1
+blood-flowing-5
+  rotate: false
+  xy: 167, 1
+  size: 42, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-6
+  rotate: false
+  xy: 67, 1
+  size: 48, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-7
+  rotate: false
+  xy: 117, 1
+  size: 48, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-8
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-9
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-10
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-11
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-12
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-13
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-14
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-15
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-16
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1
+blood-flowing-17
+  rotate: false
+  xy: 1, 1
+  size: 64, 9
+  orig: 64, 32
+  offset: 0, 7
+  index: -1

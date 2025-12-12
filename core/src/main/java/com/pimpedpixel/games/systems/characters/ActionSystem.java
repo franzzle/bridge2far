@@ -28,8 +28,8 @@ public class ActionSystem extends IteratingSystem {
         // Set the actor's position to match the entity's current transform
         action.actor.setPosition(transform.x, transform.y);
         
-        // Update the actions with delta time
-        action.act(Gdx.graphics.getDeltaTime());
+        // Update the actions with delta time from Artemis world
+        action.act(world.getDelta());
         
         // Always update the transform from the actor's position
         // This ensures that any movement from actions is applied

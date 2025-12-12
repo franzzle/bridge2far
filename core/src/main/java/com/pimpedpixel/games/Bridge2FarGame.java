@@ -147,7 +147,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         systemSet.add(new JbumpActionSyncSystem(jbumpWorld)); // Sync jbump colliders for action-based movement (zebras)
         systemSet.add(new HarryDeathSystem(jbumpWorld));
         systemSet.add(new ActionSystem());
-        systemSet.add(new ZebraStateSystem());
+        systemSet.add(new ZebraStateSystem(jbumpWorld));
         systemSet.add(new CharacterRenderSystem(spriteBatch, camera));
 
         // Debug system for zebra movement (disabled by default)
