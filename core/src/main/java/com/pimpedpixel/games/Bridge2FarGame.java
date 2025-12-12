@@ -180,7 +180,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         systemSet.add(new SoundSystem(new SoundManager(assetManager)));
 
         // 5. HUD Systems (must run after core systems)
-        systemSet.add(new TimerSystem(assetManager, stage, levelContainer, artemisWorld));
+        systemSet.add(new TimerSystem(assetManager, stage, levelContainer));
 
         // 6. Gameplay Systems
         systemSet.add(new HarryLevelStartSystem(levelContainer));
