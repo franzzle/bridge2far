@@ -58,7 +58,6 @@ public class Bridge2FarGame extends ApplicationAdapter {
     private GameInfo gameInfo;
     private OrthogonalTiledMapRenderer mapRenderer;
     private Viewport viewport;
-    private LevelLoader levelLoader;
     private LevelLoader.LevelContainer levelContainer;
 
     // --- NEW: Single Jbump World for all objects ---
@@ -69,11 +68,15 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
     // Zebra factory for creating Zebra entities
     private ZebraFactory zebraFactory;
-    
+
     // Character dimensions for Harry (used by multiple systems)
     private float harryOffsetX = 22f * ASSET_SCALE;
     private float harryWidth = 20f;
     private float harryHeight = 64f;
+
+    public AssetManager getAssetManager() {
+        return assetManager;
+    }
 
     @Override
     public void create() {
@@ -85,9 +88,8 @@ public class Bridge2FarGame extends ApplicationAdapter {
         assetLoading.ready();
 
         // --- Level Loading ---
-        levelLoader = new LevelLoader();
         try {
-            levelContainer = levelLoader.loadLevels("assets/gameplay/levelInfo.json");
+            levelContainer = assetManager.get("gameplay/levelInfo.json", LevelLoader.LevelContainer.class);
             System.out.println("Loaded " + levelContainer.getLevels().length + " levels");
         } catch (Exception e) {
             System.err.println("Failed to load levels: " + e.getMessage());
@@ -131,6 +133,18 @@ public class Bridge2FarGame extends ApplicationAdapter {
         }
 
         mapRenderer = new OrthogonalTiledMapRenderer(tileMap, ASSET_SCALE, spriteBatch);
+
+        // --- Character config (ensure dimensions/offsets are set before systems use them) ---
+        CharacterConfig.CharacterData harryData = CharacterConfig.getInstance().getCharacterByName("harry");
+        CharacterConfig.CharacterData zebraData = CharacterConfig.getInstance().getCharacterByName("zebra");
+        if (harryData != null) {
+            this.harryOffsetX = harryData.getScaledHorizontalOffset(ASSET_SCALE);
+            this.harryWidth = harryData.getWidth();
+            this.harryHeight = harryData.getHeight();
+            System.out.println("Preloaded Harry config: " + harryData.getWidth() + "x" + harryData.getHeight() + " offset=" + harryOffsetX);
+        } else {
+            System.err.println("Harry character data not found in CharacterConfig, using defaults");
+        }
 
         // --- NEW: Initialize the single Jbump World ---
         jbumpWorld = new com.dongbat.jbump.World<>();
@@ -202,13 +216,8 @@ public class Bridge2FarGame extends ApplicationAdapter {
         // Set up system dependencies after world creation
         setupSystemDependencies();
 
-        // Initialize Harry factory using CharacterConfig
-        CharacterConfig.CharacterData harryData = CharacterConfig.getInstance().getCharacterByName("harry");
-        
+        // Initialize Harry factory using CharacterConfig (use preloaded values)
         if (harryData != null) {
-            this.harryOffsetX = harryData.getScaledHorizontalOffset(ASSET_SCALE);
-            this.harryWidth = harryData.getWidth();
-            this.harryHeight = harryData.getHeight();
             harryFactory = new HarryFactory(
                 artemisWorld,
                 jbumpWorld,
@@ -218,7 +227,6 @@ public class Bridge2FarGame extends ApplicationAdapter {
             );
             System.out.println("Initialized Harry factory with CharacterConfig data: " + harryData);
         } else {
-            System.err.println("Harry character data not found in CharacterConfig, using default values");
             harryFactory = new HarryFactory(artemisWorld, jbumpWorld,
                 this.harryOffsetX,
                 this.harryWidth,
@@ -226,7 +234,6 @@ public class Bridge2FarGame extends ApplicationAdapter {
         }
 
         // Initialize Zebra factory using CharacterConfig
-        CharacterConfig.CharacterData zebraData = CharacterConfig.getInstance().getCharacterByName("zebra");
         if (zebraData != null) {
             zebraFactory = new ZebraFactory(
                 artemisWorld,
@@ -342,7 +349,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
             for (int i = 0; i < tileMap.getLayers().getCount(); i++) {
                 MapLayer layer = tileMap.getLayers().get(i);
                 System.out.println("  Layer " + i + ": " + layer.getName() + " (type: " + layer.getClass().getSimpleName() + ")");
-                
+
                 // Try to find ground layer by different names
                 if (layer.getName().toLowerCase().contains("ground")) {
                     System.out.println("    -> This layer might be the ground layer!");
@@ -352,7 +359,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
                     }
                 }
             }
-            
+
             if (groundTileLayer == null) {
                 return;
             }
@@ -410,7 +417,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
             System.out.println("ERROR: Inverted row " + actualRow + " is out of bounds! Ground layer height is " + groundTileLayer.getHeight());
             return;
         }
-        
+
         // Debug: Print initial state of the row before modification
         System.out.println("Initial state of row " + actualRow + " before modification:");
         int initialHoleCount = 0;
@@ -484,7 +491,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
             }
         }
         System.out.println("Final state: " + finalHoleCount + " holes, " + finalSolidCount + " solids");
-        
+
         // Summary of changes
         System.out.println("Tilemap modification completed. " + changesMade + " cells were modified.");
         if (changesMade == 0) {
@@ -528,19 +535,20 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 levelLoadingSystem.setDeathSystem(deathSystem);
                 levelLoadingSystem.setAssetManager(assetManager); // Set asset manager for tilemap loading
                 levelLoadingSystem.setArtemisWorld(artemisWorld); // Set Artemis world for system management
-                
+
                 // Get JbumpMapInitializationSystem for level loading
                 JbumpMapInitializationSystem jbumpMapInitSystem = artemisWorld.getSystem(JbumpMapInitializationSystem.class);
                 if (jbumpMapInitSystem != null) {
                     levelLoadingSystem.setJbumpMapInitSystem(jbumpMapInitSystem);
                 }
+                levelLoadingSystem.setTimerSystem(timerSystem);
             }
 
             // Set up level progression system
             if (levelProgressionSystem != null) {
                 levelProgressionSystem.setLevelStartSystem(levelStartSystem);
                 levelProgressionSystem.setDeathSystem(deathSystem);
-                
+
                 // Set the level loading system for level progression
                 if (levelLoadingSystem != null) {
                     levelProgressionSystem.setLevelLoadingSystem(levelLoadingSystem);

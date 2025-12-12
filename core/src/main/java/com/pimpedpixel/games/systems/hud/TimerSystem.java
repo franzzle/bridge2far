@@ -15,6 +15,7 @@ import com.pimpedpixel.games.DesignResolution;
 import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
+import com.pimpedpixel.games.gameplay.ScenarioState;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 
@@ -85,23 +86,11 @@ public class TimerSystem extends IteratingSystem {
 
     private void createTimerEntity() {
         if (levelContainer != null && levelContainer.getLevels().length > 0) {
-            // Find level 1 (the starting level) to get the correct time limit
-            Level level1 = null;
-            for (Level level : levelContainer.getLevels()) {
-                if (level.getLevelNumber() == 1) {
-                    level1 = level;
-                    break;
-                }
-            }
-
-            // If level 1 not found, use the first level as fallback
-            if (level1 == null) {
-                level1 = levelContainer.getLevels()[0];
-                Gdx.app.log("TimerSystem", "Level 1 not found, using first level as fallback");
-            }
-
-            // Get time limit from first scenario of the selected level
-            Scenario scenario = level1.getScenarios().get(0);
+            // Use current scenario (from ScenarioState) instead of hardcoded level 1
+            ScenarioState scenarioState = ScenarioState.getInstance();
+            int levelIdx = Math.max(0, Math.min(scenarioState.getCurrentLevelIndex(), levelContainer.getLevels().length - 1));
+            Level level = levelContainer.getLevels()[levelIdx];
+            Scenario scenario = level.getScenarios().get(Math.max(0, Math.min(scenarioState.getCurrentScenarioIndex(), level.getScenarios().size() - 1)));
             float timeLimit = scenario.getTimeLimit();
 
             // Create timer entity
@@ -111,7 +100,7 @@ public class TimerSystem extends IteratingSystem {
             timer.remainingTime = timeLimit;
             timer.start();
 
-            Gdx.app.log("TimerSystem", "Created timer with " + timeLimit + " seconds from level " + level1.getLevelNumber());
+            Gdx.app.log("TimerSystem", "Created timer with " + timeLimit + " seconds from level " + level.getLevelNumber());
         } else {
             Gdx.app.error("TimerSystem", "No levels found to get time limit");
         }
@@ -174,23 +163,37 @@ public class TimerSystem extends IteratingSystem {
     }
 
     /**
-     * Reset the timer.
+     * Reset the timer using the current scenario's time limit.
      */
     public void resetTimer() {
-        if (currentEntity != -1) {
+        if (currentEntity != -1 && levelContainer != null && levelContainer.getLevels().length > 0) {
+            ScenarioState scenarioState = ScenarioState.getInstance();
+            int levelIdx = Math.max(0, Math.min(scenarioState.getCurrentLevelIndex(), levelContainer.getLevels().length - 1));
+            Level level = levelContainer.getLevels()[levelIdx];
+            Scenario scenario = level.getScenarios().get(Math.max(0, Math.min(scenarioState.getCurrentScenarioIndex(), level.getScenarios().size() - 1)));
+            float timeLimit = scenario.getTimeLimit();
+
             TimerComponent timer = timerMapper.get(currentEntity);
-            timer.reset();
+            timer.totalTime = timeLimit;
+            timer.remainingTime = timeLimit;
             updateTimerLabel(timer);
         }
     }
 
     /**
-     * Reset the timer and start it immediately.
+     * Reset the timer and start it immediately using the current scenario's time limit.
      */
     public void resetAndStartTimer() {
-        if (currentEntity != -1) {
+        if (currentEntity != -1 && levelContainer != null && levelContainer.getLevels().length > 0) {
+            ScenarioState scenarioState = ScenarioState.getInstance();
+            int levelIdx = Math.max(0, Math.min(scenarioState.getCurrentLevelIndex(), levelContainer.getLevels().length - 1));
+            Level level = levelContainer.getLevels()[levelIdx];
+            Scenario scenario = level.getScenarios().get(Math.max(0, Math.min(scenarioState.getCurrentScenarioIndex(), level.getScenarios().size() - 1)));
+            float timeLimit = scenario.getTimeLimit();
+
             TimerComponent timer = timerMapper.get(currentEntity);
-            timer.reset();
+            timer.totalTime = timeLimit;
+            timer.remainingTime = timeLimit;
             timer.start();
             updateTimerLabel(timer);
         }

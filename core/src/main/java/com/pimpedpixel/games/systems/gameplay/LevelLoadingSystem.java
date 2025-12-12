@@ -15,6 +15,7 @@ import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.PhysicsComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
+import com.pimpedpixel.games.systems.hud.TimerSystem;
 
 import java.util.*;
 
@@ -44,6 +45,7 @@ public class LevelLoadingSystem extends BaseSystem {
     private HarryLevelStartSystem levelStartSystem;
     private HarryDeathSystem deathSystem;
     private JbumpMapInitializationSystem jbumpMapInitSystem;
+    private TimerSystem timerSystem;
 
     // Current level state
     private int currentLevelIndex = 0;
@@ -90,6 +92,10 @@ public class LevelLoadingSystem extends BaseSystem {
 
     public void setJbumpMapInitSystem(JbumpMapInitializationSystem jbumpMapInitSystem) {
         this.jbumpMapInitSystem = jbumpMapInitSystem;
+    }
+
+    public void setTimerSystem(TimerSystem timerSystem) {
+        this.timerSystem = timerSystem;
     }
 
     /**
@@ -148,11 +154,12 @@ public class LevelLoadingSystem extends BaseSystem {
             // Store new tilemap
             this.currentTileMap = newTileMap;
 
-            // Reinitialize Jbump world for the new level
-            initializeJbumpWorld(newTileMap);
-
-            // Apply scenario-specific modifications to the tilemap
+            // Apply scenario-specific modifications to the tilemap BEFORE rebuilding Jbump,
+            // so the collision geometry reflects the updated tiles (holes, etc.).
             applyScenarioModifications(newTileMap, scenarioIndex);
+
+            // Reinitialize Jbump world for the new level based on the modified map
+            initializeJbumpWorld(newTileMap);
 
             // Notify systems of the level change
             notifySystemsOfLevelChange();
@@ -161,6 +168,16 @@ public class LevelLoadingSystem extends BaseSystem {
             resetHarryToScenarioStart();
 
             System.out.println("Level " + levelIndex + ", scenario " + scenarioIndex + " loaded successfully");
+
+            // Trigger level start flow (titles/timer) now that state and world are set up
+            if (levelStartSystem != null) {
+                levelStartSystem.startLevel();
+            }
+
+            // Reset timer to this scenario's limit
+            if (timerSystem != null) {
+                timerSystem.resetAndStartTimer();
+            }
 
         } finally {
             // RESUME SYSTEMS AFTER TRANSITION COMPLETES
@@ -505,6 +522,20 @@ public class LevelLoadingSystem extends BaseSystem {
 
         // Modify the tiles based on cell states
         int changesMade = 0;
+
+        // Find a template tile to use when we need to fill gaps (first non-null cell)
+        TiledMapTileLayer.Cell templateCell = null;
+        outer:
+        for (int tx = 0; tx < groundTileLayer.getWidth(); tx++) {
+            for (int ty = 0; ty < groundTileLayer.getHeight(); ty++) {
+                TiledMapTileLayer.Cell candidate = groundTileLayer.getCell(tx, ty);
+                if (candidate != null && candidate.getTile() != null) {
+                    templateCell = candidate;
+                    break outer;
+                }
+            }
+        }
+
         for (int x = 0; x < cellStates.size(); x++) {
             if (x >= groundTileLayer.getWidth()) break;
 
@@ -514,6 +545,15 @@ public class LevelLoadingSystem extends BaseSystem {
             if (collisionType == CollisionType.HOLE) {
                 groundTileLayer.setCell(x, actualRow, null);
                 changesMade++;
+            } else if (collisionType == CollisionType.SOLID) {
+                TiledMapTileLayer.Cell cell = groundTileLayer.getCell(x, actualRow);
+                if (cell == null && templateCell != null) {
+                    // Fill missing tiles to ensure collision is present where scenario says SOLID.
+                    TiledMapTileLayer.Cell newCell = new TiledMapTileLayer.Cell();
+                    newCell.setTile(templateCell.getTile());
+                    groundTileLayer.setCell(x, actualRow, newCell);
+                    changesMade++;
+                }
             }
         }
 

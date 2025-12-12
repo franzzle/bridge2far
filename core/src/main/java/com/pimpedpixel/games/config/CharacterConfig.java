@@ -1,7 +1,8 @@
 package com.pimpedpixel.games.config;
 
-import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Json;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class CharacterConfig {
     public static synchronized CharacterConfig getInstance() {
         if (instance == null) {
             instance = new CharacterConfig();
-            instance.loadCharacters("assets/characters/characters.json");
+            instance.loadCharacters("characters/characters.json");
         }
         return instance;
     }
@@ -43,26 +44,43 @@ public class CharacterConfig {
      */
     public void loadCharacters(String filePath) {
         try {
-            FileHandle file = new FileHandle(filePath);
-            if (file.exists()) {
-                Json json = new Json();
-                CharacterData[] characters = json.fromJson(CharacterData[].class, file);
-                
-                // Clear existing data and populate map
-                characterMap.clear();
+            CharacterData[] characters = null;
+
+            // Prefer preloaded AssetManager data (GWT-friendly), fall back to direct file.
+            if (Gdx.app != null && Gdx.app.getApplicationListener() instanceof com.badlogic.gdx.ApplicationListener) {
+                try {
+                    com.pimpedpixel.games.Bridge2FarGame game = (com.pimpedpixel.games.Bridge2FarGame) Gdx.app.getApplicationListener();
+                    com.badlogic.gdx.assets.AssetManager am = game.getAssetManager();
+                    if (am != null && am.isLoaded(filePath, CharacterData[].class)) {
+                        characters = am.get(filePath, CharacterData[].class);
+                    }
+                } catch (ClassCastException ignored) {
+                    // If the listener is not our game, fall back to file.
+                }
+            }
+
+            if (characters == null) {
+                FileHandle file = Gdx.files.internal(filePath);
+                if (file.exists()) {
+                    Json json = new Json();
+                    characters = json.fromJson(CharacterData[].class, file);
+                }
+            }
+
+            // Clear existing data and populate map
+            characterMap.clear();
+            if (characters != null) {
                 for (CharacterData character : characters) {
                     characterMap.put(character.getName().toLowerCase(), character);
                 }
-                
-                System.out.println("CharacterConfig loaded successfully with " + characterMap.size() + " characters:");
-                for (String name : characterMap.keySet()) {
-                    CharacterData data = characterMap.get(name);
-                    System.out.println("  " + name + ": width=" + data.getWidth() + 
-                                     ", height=" + data.getHeight() + 
-                                     ", offset=" + data.getHorizontalOffset());
-                }
-            } else {
-                System.err.println("Character config file not found: " + filePath + ", using empty configuration");
+            }
+            
+            System.out.println("CharacterConfig loaded successfully with " + characterMap.size() + " characters:");
+            for (String name : characterMap.keySet()) {
+                CharacterData data = characterMap.get(name);
+                System.out.println("  " + name + ": width=" + data.getWidth() + 
+                                 ", height=" + data.getHeight() + 
+                                 ", offset=" + data.getHorizontalOffset());
             }
         } catch (Exception e) {
             System.err.println("Failed to load character config: " + e.getMessage());
@@ -75,7 +93,7 @@ public class CharacterConfig {
      * Useful for applying changes without restarting the application.
      */
     public void reload() {
-        loadCharacters("assets/characters/characters.json");
+        loadCharacters("characters/characters.json");
     }
     
     /**
@@ -129,10 +147,8 @@ public class CharacterConfig {
         private float height;
         private float horizontalOffset;
         
-        // Private constructor for internal use
-        private CharacterData() {
-            // Default constructor for JSON parsing
-        }
+        // Public no-arg constructor needed for GWT/Json instantiation
+        public CharacterData() { }
         
         /**
          * Get the character name.

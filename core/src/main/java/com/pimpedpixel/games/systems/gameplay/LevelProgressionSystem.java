@@ -110,60 +110,68 @@ public class LevelProgressionSystem extends IteratingSystem {
         if (scenarioState.isTreasureFoundThisScenario()) {
             System.out.println("Treasure found! Advancing to next level...");
             
-            // Get current level index
+            // Get current level/scenario indices
             int currentLevelIndex = scenarioState.getCurrentLevelIndex();
-            
-            // Check if we need to advance to next level
+            int currentScenarioIndex = scenarioState.getCurrentScenarioIndex();
+
+            int targetLevelIndex = currentLevelIndex;
+            int targetScenarioIndex = currentScenarioIndex + 1;
+
+            // If we've exhausted scenarios in this level, move to next level (wrap if needed)
             if (levelContainer != null && levelContainer.getLevels().length > 0) {
-                int nextLevelIndex = currentLevelIndex + 1;
-                
-                // Wrap around to first level if all levels are completed
-                if (nextLevelIndex >= levelContainer.getLevels().length) {
-                    nextLevelIndex = 0;
-                    System.out.println("All levels completed! Wrapping around to level 1.");
-                }
-                
-                // Load the new level using LevelLoadingSystem (handles everything)
-                if (levelLoadingSystem != null) {
-                    levelLoadingSystem.loadLevel(nextLevelIndex, 0); // Load level with first scenario
-                } else {
-                    // Fallback to manual updates if LevelLoadingSystem not available
-                    scenarioState.advanceToNextLevel();
-                    scenarioState.setCurrentScenarioIndex(0);
-                    
-                    if (levelStartSystem != null) {
-                        levelStartSystem.setCurrentLevelIndex(nextLevelIndex);
-                    }
-                    
-                    if (deathSystem != null) {
-                        deathSystem.setCurrentLevelIndex(nextLevelIndex);
-                    }
-                    
-                    if (levelStartSystem != null) {
-                        levelStartSystem.startLevel();
-                    }
-                    
-                    // Move Harry to the new level's starting position
-                    HarryStateComponent harryState = mHarryState.get(entityId);
-                    TransformComponent transformComp = mTransform.get(entityId);
-                    JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
-                    
-                    if (harryState != null && transformComp != null && jbumpItemComp != null) {
-                        float[] startPosition = getScenarioStartPosition(nextLevelIndex, 0);
-                        float newX = startPosition[0];
-                        float newY = startPosition[1];
-                        
-                        transformComp.x = newX;
-                        transformComp.y = newY;
-                        jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
-                        
-                        System.out.println("Moved Harry to new level " + nextLevelIndex + " starting position: (" + newX + ", " + newY + ")");
+                int scenarioCount = levelContainer.getLevels()[currentLevelIndex].getScenarios().size();
+                if (targetScenarioIndex >= scenarioCount) {
+                    targetScenarioIndex = 0;
+                    targetLevelIndex = currentLevelIndex + 1;
+                    if (targetLevelIndex >= levelContainer.getLevels().length) {
+                        targetLevelIndex = 0;
+                        System.out.println("All levels completed! Wrapping around to level 1.");
                     }
                 }
-                
-                // Print statistics
-                scenarioState.printDebugState();
             }
+
+            // Load the new level/scenario using LevelLoadingSystem (handles everything)
+            if (levelLoadingSystem != null) {
+                levelLoadingSystem.loadLevel(targetLevelIndex, targetScenarioIndex);
+            } else {
+                // Fallback to manual updates if LevelLoadingSystem not available
+                scenarioState.setCurrentScenarioIndex(targetScenarioIndex);
+                if (targetLevelIndex != currentLevelIndex) {
+                    scenarioState.advanceToNextLevel();
+                    scenarioState.setCurrentScenarioIndex(targetScenarioIndex);
+                    if (levelStartSystem != null) {
+                        levelStartSystem.setCurrentLevelIndex(targetLevelIndex);
+                    }
+                    if (deathSystem != null) {
+                        deathSystem.setCurrentLevelIndex(targetLevelIndex);
+                    }
+                }
+
+                if (levelStartSystem != null) {
+                    levelStartSystem.startLevel();
+                }
+
+                // Move Harry to the new scenario start position
+                HarryStateComponent harryState = mHarryState.get(entityId);
+                TransformComponent transformComp = mTransform.get(entityId);
+                JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
+
+                if (harryState != null && transformComp != null && jbumpItemComp != null) {
+                    float[] startPosition = getScenarioStartPosition(targetLevelIndex, targetScenarioIndex);
+                    float newX = startPosition[0];
+                    float newY = startPosition[1];
+
+                    transformComp.x = newX;
+                    transformComp.y = newY;
+                    jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+
+                    System.out.println("Moved Harry to level " + targetLevelIndex + " scenario " + targetScenarioIndex +
+                        " starting position: (" + newX + ", " + newY + ")");
+                }
+            }
+
+            // Print statistics
+            scenarioState.printDebugState();
         }
     }
 }

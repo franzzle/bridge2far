@@ -1,7 +1,8 @@
 package com.pimpedpixel.games.config;
 
-import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Json;
 
 /**
  * Singleton class for managing debug configuration loaded from debugconfig.json.
@@ -11,6 +12,7 @@ public class DebugConfig {
     
     // Singleton instance
     private static DebugConfig instance;
+    private static DebugConfigData cachedData;
     
     // Debug configuration properties (matching debugconfig.json)
     private boolean boundingboxes;
@@ -32,7 +34,7 @@ public class DebugConfig {
     public static synchronized DebugConfig getInstance() {
         if (instance == null) {
             instance = new DebugConfig();
-            instance.loadConfig("assets/config/debugconfig.json");
+            instance.loadConfig("config/debugconfig.json");
         }
         return instance;
     }
@@ -44,15 +46,19 @@ public class DebugConfig {
      */
     public void loadConfig(String filePath) {
         try {
-            FileHandle file = new FileHandle(filePath);
-            if (file.exists()) {
-                Json json = new Json();
-                DebugConfigData configData = json.fromJson(DebugConfigData.class, file);
-                
-                // Copy values from the loaded data
+            // Prefer preloaded AssetManager data (GWT-friendly), fall back to direct file.
+            DebugConfigData configData = cachedData;
+            if (configData == null) {
+                FileHandle file = Gdx.files.internal(filePath);
+                if (file.exists()) {
+                    Json json = new Json();
+                    configData = json.fromJson(DebugConfigData.class, file);
+                }
+            }
+
+            if (configData != null) {
                 this.boundingboxes = configData.isBoundingboxes();
                 this.hidegroundlayer = configData.isHidegroundlayer();
-                
                 System.out.println("DebugConfig loaded successfully:");
                 System.out.println("  boundingboxes: " + this.boundingboxes);
                 System.out.println("  hidegroundlayer: " + this.hidegroundlayer);
@@ -70,7 +76,7 @@ public class DebugConfig {
      * Useful for applying changes without restarting the application.
      */
     public void reload() {
-        loadConfig("assets/config/debugconfig.json");
+        loadConfig("config/debugconfig.json");
     }
     
     // Getters matching the property names in debugconfig.json
@@ -114,7 +120,7 @@ public class DebugConfig {
     /**
      * Helper class to match the JSON structure in debugconfig.json.
      */
-    private static class DebugConfigData {
+    public static class DebugConfigData {
         private boolean boundingboxes;
         private boolean hidegroundlayer;
         

@@ -1,10 +1,11 @@
 package com.pimpedpixel.games.gameplay;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Level {
     private int levelNumber;
-    private List<Scenario> scenarios;
+    private ArrayList<Scenario> scenarios;
 
     // Getters and setters
     public int getLevelNumber() {
@@ -20,6 +21,10 @@ public class Level {
     }
 
     public void setScenarios(List<Scenario> scenarios) {
-        this.scenarios = scenarios;
+        if (scenarios instanceof ArrayList) {
+            this.scenarios = (ArrayList<Scenario>) scenarios;
+        } else {
+            this.scenarios = new ArrayList<>(scenarios);
+        }
     }
 }

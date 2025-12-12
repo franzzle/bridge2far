@@ -1,7 +1,8 @@
 package com.pimpedpixel.games.gameplay;
 
-import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Json;
 
 public class LevelLoader {
     private final Json json;
@@ -11,7 +12,7 @@ public class LevelLoader {
     }
 
     public LevelContainer loadLevels(String filePath) {
-        FileHandle file = new FileHandle(filePath);
+        FileHandle file = Gdx.files.internal(filePath);
         return json.fromJson(LevelContainer.class, file);
     }
 

@@ -49,7 +49,7 @@
       "scenarios": [
         {
           "title": "Run Forest, Run!",
-          "timeLimit": 20,
+          "timeLimit": 11,
           "startingPositionX" : 20,
           "startingPositionY" : 700,
           "groundLayer": {
