@@ -23,7 +23,7 @@ public class HarryJumpSoundSystem extends IteratingSystem {
         if (justStartedJumping) {
             // Attach PlaySoundComponent ONCE to this entity
             PlaySoundComponent playSound = mPlaySound.create(entityId);
-            playSound.soundId = 1;   // whatever key your sound system uses
+            playSound.soundId = SoundId.JUMPING;   // Use enum for type safety
             // you can add extra fields like volume, pitch, etc.
         }
 

@@ -33,6 +33,7 @@ import com.pimpedpixel.games.systems.debug.ZebraDebugSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryDeathSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryLevelStartSystem;
+import com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
@@ -65,6 +66,11 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
     // Zebra factory for creating Zebra entities
     private ZebraFactory zebraFactory;
+    
+    // Character dimensions for Harry (used by multiple systems)
+    private float harryOffsetX = 22f * ASSET_SCALE;
+    private float harryWidth = 20f;
+    private float harryHeight = 64f;
 
     @Override
     public void create() {
@@ -148,6 +154,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         systemSet.add(new HarryDeathSystem(jbumpWorld));
         systemSet.add(new ActionSystem());
         systemSet.add(new ZebraStateSystem(jbumpWorld));
+        systemSet.add(new RewardCollisionSystem(jbumpWorld, tileMap, "objects", harryOffsetX, harryWidth, harryHeight, ASSET_SCALE)); // Check reward collisions
         systemSet.add(new BloodRenderSystem(spriteBatch, camera)); // Draw blood first (behind characters)
         systemSet.add(new CharacterRenderSystem(spriteBatch, camera));
 
@@ -192,21 +199,25 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
         // Initialize Harry factory using CharacterConfig
         CharacterConfig.CharacterData harryData = CharacterConfig.getInstance().getCharacterByName("harry");
+        
         if (harryData != null) {
+            this.harryOffsetX = harryData.getScaledHorizontalOffset(ASSET_SCALE);
+            this.harryWidth = harryData.getWidth();
+            this.harryHeight = harryData.getHeight();
             harryFactory = new HarryFactory(
                 artemisWorld,
                 jbumpWorld,
-                harryData.getScaledHorizontalOffset(ASSET_SCALE),
-                harryData.getWidth(),
-                harryData.getHeight()
+                this.harryOffsetX,
+                this.harryWidth,
+                this.harryHeight
             );
             System.out.println("Initialized Harry factory with CharacterConfig data: " + harryData);
         } else {
             System.err.println("Harry character data not found in CharacterConfig, using default values");
             harryFactory = new HarryFactory(artemisWorld, jbumpWorld,
-                22f * ASSET_SCALE,
-                20f,
-                64f);
+                this.harryOffsetX,
+                this.harryWidth,
+                this.harryHeight);
         }
 
         // Initialize Zebra factory using CharacterConfig
