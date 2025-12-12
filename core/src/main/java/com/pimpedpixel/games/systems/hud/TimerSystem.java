@@ -3,7 +3,6 @@ package com.pimpedpixel.games.systems.hud;
 import com.artemis.Aspect;
 import com.artemis.ComponentMapper;
 import com.artemis.EntitySubscription;
-import com.artemis.World;
 import com.artemis.systems.IteratingSystem;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
@@ -12,7 +11,6 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.utils.Align;
-import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
 import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
@@ -25,7 +23,6 @@ import com.pimpedpixel.games.systems.characters.HarryStateComponent;
  */
 public class TimerSystem extends IteratingSystem {
 
-    private final World artemisWorld;
     private ComponentMapper<TimerComponent> timerMapper;
     private ComponentMapper<HarryStateComponent> harryStateMapper;
     private final AssetManager assetManager;
@@ -44,13 +41,11 @@ public class TimerSystem extends IteratingSystem {
 
     public TimerSystem(AssetManager assetManager,
                        Stage stage,
-                       LevelLoader.LevelContainer levelContainer,
-                       World artemisWorld) {
+                       LevelLoader.LevelContainer levelContainer) {
         super(Aspect.all(TimerComponent.class));
         this.assetManager = assetManager;
         this.stage = stage;
         this.levelContainer = levelContainer;
-        this.artemisWorld = artemisWorld;
     }
 
     @Override
@@ -85,7 +80,7 @@ public class TimerSystem extends IteratingSystem {
         createTimerEntity();
 
         // Initialize entity subscription for Harry entities
-        harrySubscription = artemisWorld.getAspectSubscriptionManager().get(Aspect.all(HarryStateComponent.class));
+        harrySubscription = world.getAspectSubscriptionManager().get(Aspect.all(HarryStateComponent.class));
     }
 
     private void createTimerEntity() {
