@@ -8,6 +8,7 @@ import com.pimpedpixel.games.config.CharacterConfig;
 import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
+import com.pimpedpixel.games.systems.characters.BloodFactory;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
@@ -28,6 +29,9 @@ public class HarryDeathSystem extends IteratingSystem {
     private int currentLevelIndex = 0; // Track current level for scenario title display
     private static final float DYING_DURATION = 2.0f; // 2 seconds in DYING state
     private static final float DIED_DURATION = 1.0f;  // 1 second in DIED state before revival
+    
+    // Blood factory for creating blood entities when Harry dies
+    private BloodFactory bloodFactory;
 
     // Character data for Harry (loaded from CharacterConfig)
     private float harryOffsetX = 22f; // Default values
@@ -58,6 +62,15 @@ public class HarryDeathSystem extends IteratingSystem {
      */
     public void setCurrentLevelIndex(int levelIndex) {
         this.currentLevelIndex = levelIndex;
+    }
+
+    /**
+     * Set the blood factory for creating blood entities.
+     *
+     * @param bloodFactory The blood factory instance
+     */
+    public void setBloodFactory(BloodFactory bloodFactory) {
+        this.bloodFactory = bloodFactory;
     }
 
     /**
@@ -114,6 +127,14 @@ public class HarryDeathSystem extends IteratingSystem {
             // Reset stateTime when first entering DYING state
             if (stateComp.previousState != HarryState.DYING) {
                 stateComp.stateTime = 0f;
+                
+                // Create blood at Harry's current position when he starts dying
+                if (bloodFactory != null) {
+                    bloodFactory.createBlood(transformComp.x, transformComp.y);
+                    System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ")");
+                } else {
+                    System.err.println("Blood factory not set - cannot create blood animation");
+                }
             }
 
             stateComp.stateTime += world.getDelta();

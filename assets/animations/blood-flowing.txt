@@ -1,7 +1,7 @@
 blood-flowing.png
 size: 292, 11
 format: RGBA8888
-filter: Linear,Linear
+filter: Linear, Linear
 repeat: none
 blood-flowing-1
   rotate: false

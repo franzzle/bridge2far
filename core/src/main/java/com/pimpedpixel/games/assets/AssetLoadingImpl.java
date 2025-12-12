@@ -10,6 +10,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.pimpedpixel.games.GameInfo;
@@ -34,6 +35,7 @@ public class AssetLoadingImpl implements AssetLoading {
         initTmxTiles();
         initSoundFx();
         initBackgroundMusic();
+        initBloodAnimation();
 
         assetManager.finishLoading();
     }
@@ -167,6 +169,18 @@ public class AssetLoadingImpl implements AssetLoading {
                 assetManager.load(musicFile.path(), Music.class);
                 Gdx.app.log("AssetLoading", "Preloading music: " + musicFile.path());
             }
+        }
+    }
+
+    private void initBloodAnimation() {
+        final String bloodAtlasPath = "animations/blood-flowing.txt";
+        final FileHandle bloodAtlasFile = Gdx.files.internal(bloodAtlasPath);
+        
+        if (bloodAtlasFile.exists()) {
+            Gdx.app.log(this.getClass().getSimpleName(), "Loading blood animation: " + bloodAtlasFile.path());
+            assetManager.load(bloodAtlasPath, TextureAtlas.class);
+        } else {
+            System.out.println("Blood animation file not found: " + bloodAtlasFile.path());
         }
     }
 

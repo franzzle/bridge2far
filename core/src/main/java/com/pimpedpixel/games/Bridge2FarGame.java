@@ -149,6 +149,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         systemSet.add(new ActionSystem());
         systemSet.add(new ZebraStateSystem(jbumpWorld));
         systemSet.add(new CharacterRenderSystem(spriteBatch, camera));
+        systemSet.add(new BloodRenderSystem(spriteBatch, camera));
 
         // Debug system for zebra movement (disabled by default)
         ZebraDebugSystem zebraDebugSystem = new ZebraDebugSystem(jbumpWorld);
@@ -480,6 +481,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         TimerSystem timerSystem = artemisWorld.getSystem(TimerSystem.class);
         HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
         CharacterRenderSystem renderSystem = artemisWorld.getSystem(CharacterRenderSystem.class);
+        BloodRenderSystem bloodRenderSystem = artemisWorld.getSystem(BloodRenderSystem.class);
 
         if (levelStartSystem != null && timerSystem != null) {
             levelStartSystem.setTimerSystem(timerSystem);
@@ -492,6 +494,10 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
                 // Configure character data from CharacterConfig
                 deathSystem.setCharacterDataFromConfig(ASSET_SCALE);
+
+                // Set up blood factory for creating blood animations when Harry dies
+                BloodFactory bloodFactory = new BloodFactory(artemisWorld, assetManager);
+                deathSystem.setBloodFactory(bloodFactory);
             }
 
             // Configure character render system from CharacterConfig
