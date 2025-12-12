@@ -9,6 +9,7 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.dongbat.jbump.Item;
 import com.dongbat.jbump.World;
 import com.pimpedpixel.games.DesignResolution;
+import java.util.ArrayList;
 
 /**
  * Builds all static Jbump collision geometry from the Tiled map.
@@ -22,6 +23,7 @@ public class JbumpMapInitializationSystem extends BaseSystem {
     private String groundLayerName;
 
     private static final String STATIC_ITEM_IDENTIFIER = "MAP_COLLISION";
+    private static final String BOUNDARY_ITEM_IDENTIFIER = "BOUNDARY_WALL";
     private static final float SCALE = DesignResolution.ASSET_SCALE;
 
     public JbumpMapInitializationSystem(
@@ -54,12 +56,25 @@ public class JbumpMapInitializationSystem extends BaseSystem {
      */
     private void clearCollisionGeometry() {
         if (jbumpWorld != null) {
-            // Remove all items with the static identifier
-            jbumpWorld.getItems().removeIf(item ->
-                STATIC_ITEM_IDENTIFIER.equals(item.userData));
+            // Collect map-related items so we can remove them safely and keep cell state in sync
+            ArrayList<Item<Object>> itemsToRemove = new ArrayList<>();
+            for (Item item : jbumpWorld.getItems()) {
+                Object userData = item.userData;
+                if (STATIC_ITEM_IDENTIFIER.equals(userData) || BOUNDARY_ITEM_IDENTIFIER.equals(userData)) {
+                    // Suppress unchecked warning: we only store Objects in this world
+                    @SuppressWarnings("unchecked")
+                    Item<Object> typedItem = (Item<Object>) item;
+                    itemsToRemove.add(typedItem);
+                }
+            }
+
+            // Use World.remove so the item is purged from both rects and cell grid
+            for (Item<Object> item : itemsToRemove) {
+                jbumpWorld.remove(item);
+            }
 
             Gdx.app.log("JbumpMapInitializationSystem",
-                "Cleared existing collision geometry");
+                "Cleared existing collision geometry (" + itemsToRemove.size() + " items)");
         }
     }
 
@@ -181,22 +196,20 @@ public class JbumpMapInitializationSystem extends BaseSystem {
         float mapHeightPixels = mapHeight * tileHeight;
 
         // Create boundary walls (1 tile thick)
-        String boundaryIdentifier = "BOUNDARY_WALL";
-
         // Left wall - placed just left of the map
-        Item<Object> leftWall = new Item<>(boundaryIdentifier);
+        Item<Object> leftWall = new Item<>(BOUNDARY_ITEM_IDENTIFIER);
         jbumpWorld.add(leftWall, -tileWidth, 0, tileWidth, mapHeightPixels);
 
         // Right wall - placed just right of the map
-        Item<Object> rightWall = new Item<>(boundaryIdentifier);
+        Item<Object> rightWall = new Item<>(BOUNDARY_ITEM_IDENTIFIER);
         jbumpWorld.add(rightWall, mapWidthPixels, 0, tileWidth, mapHeightPixels);
 
         // Bottom wall - placed just below the map
-        Item<Object> bottomWall = new Item<>(boundaryIdentifier);
+        Item<Object> bottomWall = new Item<>(BOUNDARY_ITEM_IDENTIFIER);
         jbumpWorld.add(bottomWall, 0, -tileHeight, mapWidthPixels, tileHeight);
 
         // Top wall - placed just above the map
-        Item<Object> topWall = new Item<>(boundaryIdentifier);
+        Item<Object> topWall = new Item<>(BOUNDARY_ITEM_IDENTIFIER);
         jbumpWorld.add(topWall, 0, mapHeightPixels, mapWidthPixels, tileHeight);
 
         Gdx.app.log("JbumpMapInitializationSystem",

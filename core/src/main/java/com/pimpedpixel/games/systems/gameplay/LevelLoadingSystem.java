@@ -65,7 +65,6 @@ public class LevelLoadingSystem extends BaseSystem {
 
     @Override
     protected void processSystem() {
-        System.out.println("Ok?");
     }
 
     /**
@@ -162,54 +161,54 @@ public class LevelLoadingSystem extends BaseSystem {
      */
     private void pauseDependentSystems() {
         System.out.println("Pausing systems that depend on Jbump world during level transition");
-        
+
         if (artemisWorld == null) {
             System.out.println("Warning: Artemis world not set, cannot pause systems");
             return;
         }
-        
+
         try {
             // Get all systems from the Artemis world
             // We'll pause systems that are likely to depend on Jbump world
-            
+
             // Pause CharacterMovementSystem
-            com.pimpedpixel.games.systems.characters.CharacterMovementSystem movementSystem = 
+            com.pimpedpixel.games.systems.characters.CharacterMovementSystem movementSystem =
                 artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.CharacterMovementSystem.class);
             if (movementSystem != null) {
                 movementSystem.setEnabled(false);
                 System.out.println("Paused CharacterMovementSystem");
             }
-            
+
             // Pause JbumpActionSyncSystem
-            com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem actionSyncSystem = 
+            com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem actionSyncSystem =
                 artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem.class);
             if (actionSyncSystem != null) {
                 actionSyncSystem.setEnabled(false);
                 System.out.println("Paused JbumpActionSyncSystem");
             }
-            
+
             // Pause HarryDeathSystem
             HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
             if (deathSystem != null) {
                 deathSystem.setEnabled(false);
                 System.out.println("Paused HarryDeathSystem");
             }
-            
+
             // Pause RewardCollisionSystem
-            com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem rewardSystem = 
+            com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem rewardSystem =
                 artemisWorld.getSystem(com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem.class);
             if (rewardSystem != null) {
                 rewardSystem.setEnabled(false);
                 System.out.println("Paused RewardCollisionSystem");
             }
-            
+
             // Pause LevelProgressionSystem to prevent recursive level loading
             LevelProgressionSystem progressionSystem = artemisWorld.getSystem(LevelProgressionSystem.class);
             if (progressionSystem != null) {
                 progressionSystem.setEnabled(false);
                 System.out.println("Paused LevelProgressionSystem");
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error pausing systems: " + e.getMessage());
             e.printStackTrace();
@@ -221,51 +220,51 @@ public class LevelLoadingSystem extends BaseSystem {
      */
     private void resumeDependentSystems() {
         System.out.println("Resuming systems after level transition completes");
-        
+
         if (artemisWorld == null) {
             System.out.println("Warning: Artemis world not set, cannot resume systems");
             return;
         }
-        
+
         try {
             // Resume CharacterMovementSystem
-            com.pimpedpixel.games.systems.characters.CharacterMovementSystem movementSystem = 
+            com.pimpedpixel.games.systems.characters.CharacterMovementSystem movementSystem =
                 artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.CharacterMovementSystem.class);
             if (movementSystem != null) {
                 movementSystem.setEnabled(true);
                 System.out.println("Resumed CharacterMovementSystem");
             }
-            
+
             // Resume JbumpActionSyncSystem
-            com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem actionSyncSystem = 
+            com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem actionSyncSystem =
                 artemisWorld.getSystem(com.pimpedpixel.games.systems.characters.JbumpActionSyncSystem.class);
             if (actionSyncSystem != null) {
                 actionSyncSystem.setEnabled(true);
                 System.out.println("Resumed JbumpActionSyncSystem");
             }
-            
+
             // Resume HarryDeathSystem
             HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
             if (deathSystem != null) {
                 deathSystem.setEnabled(true);
                 System.out.println("Resumed HarryDeathSystem");
             }
-            
+
             // Resume RewardCollisionSystem
-            com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem rewardSystem = 
+            com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem rewardSystem =
                 artemisWorld.getSystem(com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem.class);
             if (rewardSystem != null) {
                 rewardSystem.setEnabled(true);
                 System.out.println("Resumed RewardCollisionSystem");
             }
-            
+
             // Resume LevelProgressionSystem
             LevelProgressionSystem progressionSystem = artemisWorld.getSystem(LevelProgressionSystem.class);
             if (progressionSystem != null) {
                 progressionSystem.setEnabled(true);
                 System.out.println("Resumed LevelProgressionSystem");
             }
-            
+
         } catch (Exception e) {
             System.err.println("Error resuming systems: " + e.getMessage());
             e.printStackTrace();
@@ -343,21 +342,21 @@ public class LevelLoadingSystem extends BaseSystem {
     private TiledMap loadBridgeFallMap(String mapName) {
         try {
             System.out.println("Loading tilemap: " + mapName);
-            
+
             if (assetManager == null) {
                 Gdx.app.error("LevelLoadingSystem", "AssetManager not set! Cannot load tilemaps.");
                 return null;
             }
-            
+
             // Construct the path to the tilemap
             String path = "rooms/tiles/" + mapName + ".tmx";
-            
+
             System.out.println("Looking for tilemap at path: " + path);
-            
+
             // Check if the asset manager contains the tilemap
             if (!assetManager.contains(path)) {
                 Gdx.app.error("LevelLoadingSystem", "Tilemap not found in asset manager: " + path);
-                
+
                 // Debug: List available tilemaps
                 System.out.println("Available tilemaps in asset manager:");
                 for (String assetName : assetManager.getAssetNames()) {
@@ -365,22 +364,22 @@ public class LevelLoadingSystem extends BaseSystem {
                         System.out.println("  - " + assetName);
                     }
                 }
-                
+
                 return null;
             }
-            
+
             // Load and return the tilemap
             assetManager.finishLoadingAsset(path);
             TiledMap tileMap = assetManager.get(path, TiledMap.class);
-            
+
             if (tileMap == null) {
                 Gdx.app.error("LevelLoadingSystem", "Failed to load tilemap from asset manager: " + path);
                 return null;
             }
-            
+
             System.out.println("Successfully loaded tilemap: " + mapName);
             return tileMap;
-            
+
         } catch (Exception e) {
             Gdx.app.error("LevelLoadingSystem", "Failed to load tilemap " + mapName + ": " + e.getMessage());
             e.printStackTrace();
