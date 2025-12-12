@@ -74,6 +74,10 @@ public class Bridge2FarGame extends ApplicationAdapter {
     private float harryWidth = 20f;
     private float harryHeight = 64f;
 
+    public AssetManager getAssetManager() {
+        return assetManager;
+    }
+
     @Override
     public void create() {
         // --- Assets ---

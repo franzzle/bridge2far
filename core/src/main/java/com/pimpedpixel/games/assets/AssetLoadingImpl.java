@@ -16,8 +16,10 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.pimpedpixel.games.GameInfo;
 import com.pimpedpixel.games.assets.DebugConfigAssetLoader.DebugConfigParameter;
 import com.pimpedpixel.games.assets.LevelContainerAssetLoader.LevelContainerParameter;
+import com.pimpedpixel.games.assets.CharacterConfigAssetLoader.CharacterConfigParameter;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.config.DebugConfig;
+import com.pimpedpixel.games.config.CharacterConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +44,7 @@ public class AssetLoadingImpl implements AssetLoading {
         initBloodAnimation();
         initLevelData();
         initDebugConfig();
+        initCharacterConfig();
 
         assetManager.finishLoading();
     }
@@ -205,6 +208,14 @@ public class AssetLoadingImpl implements AssetLoading {
             new DebugConfigAssetLoader(new InternalFileHandleResolver()));
         assetManager.load(debugConfigPath, DebugConfig.DebugConfigData.class, new DebugConfigParameter());
         Gdx.app.log(this.getClass().getSimpleName(), "Preloading debug config: " + debugConfigPath);
+    }
+
+    private void initCharacterConfig() {
+        final String characterConfigPath = "characters/characters.json";
+        assetManager.setLoader(CharacterConfig.CharacterData[].class,
+            new CharacterConfigAssetLoader(new InternalFileHandleResolver()));
+        assetManager.load(characterConfigPath, CharacterConfig.CharacterData[].class, new CharacterConfigParameter());
+        Gdx.app.log(this.getClass().getSimpleName(), "Preloading character config: " + characterConfigPath);
     }
 
     @Override
