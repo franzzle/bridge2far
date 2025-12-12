@@ -1,3 +1,5 @@
 jumping
 bonebreak
 unlock
+grunt
+dying

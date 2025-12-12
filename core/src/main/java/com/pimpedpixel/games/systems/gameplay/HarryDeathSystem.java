@@ -26,6 +26,7 @@ public class HarryDeathSystem extends IteratingSystem {
     ComponentMapper<HarryStateComponent> mHarryState;
     ComponentMapper<TransformComponent> mTransform;
     ComponentMapper<JbumpItemComponent> mJbumpItem;
+    ComponentMapper<PlaySoundComponent> mPlaySound;
 
     private final World<Object> jbumpWorld;
     private TimerSystem timerSystem; // Reference to timer system for resetting timer on revival
@@ -155,6 +156,13 @@ public class HarryDeathSystem extends IteratingSystem {
             // Reset stateTime when first entering DYING state
             if (stateComp.previousState != HarryState.DYING) {
                 stateComp.stateTime = 0f;
+
+                ScenarioState scenarioState = ScenarioState.getInstance();
+                if (!scenarioState.hasPlayedDeathGruntThisLevel()) {
+                    PlaySoundComponent playSound = mPlaySound.create(entityId);
+                    playSound.soundId = SoundId.GRUNT;
+                    scenarioState.markDeathGruntPlayedThisLevel();
+                }
 
                 // Use the orientation from when Harry started falling, or current orientation if not tracked
                 Direction bloodOrientation = (entityId == fallingHarryEntityId) ? fallingOrientation : stateComp.dir;

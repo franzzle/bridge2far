@@ -13,6 +13,7 @@ public class ScenarioState {
     private int currentLevelIndex = 0;
     private int currentScenarioIndex = 0;
     private boolean treasureFoundThisScenario = false;
+    private boolean playedDeathGruntThisLevel = false;
     
     // Scenario tracking per level
     private Map<Integer, LevelScenarioData> levelScenarioDataMap = new HashMap<>();
@@ -137,9 +138,13 @@ public class ScenarioState {
      * Initialize or reset state for a new level
      */
     public void initializeLevel(int levelIndex) {
+        int previousLevelIndex = this.currentLevelIndex;
         this.currentLevelIndex = levelIndex;
         this.currentScenarioIndex = 0;
         this.treasureFoundThisScenario = false;
+        if (levelIndex != previousLevelIndex) {
+            this.playedDeathGruntThisLevel = false;
+        }
         
         // Initialize level data if not exists
         levelScenarioDataMap.computeIfAbsent(levelIndex, k -> new LevelScenarioData());
@@ -240,10 +245,19 @@ public class ScenarioState {
         currentLevelIndex++;
         currentScenarioIndex = 0;
         treasureFoundThisScenario = false;
+        playedDeathGruntThisLevel = false;
         totalLevelsUnlocked++;
         
         // Initialize new level data
         levelScenarioDataMap.computeIfAbsent(currentLevelIndex, k -> new LevelScenarioData());
+    }
+
+    public boolean hasPlayedDeathGruntThisLevel() {
+        return playedDeathGruntThisLevel;
+    }
+
+    public void markDeathGruntPlayedThisLevel() {
+        this.playedDeathGruntThisLevel = true;
     }
     
     /**

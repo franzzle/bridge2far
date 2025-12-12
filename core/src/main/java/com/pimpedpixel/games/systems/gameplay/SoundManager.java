@@ -6,10 +6,12 @@ import com.badlogic.gdx.audio.Sound;
 public class SoundManager {
     final Sound jumpingSound;
     final Sound unlockSound;
+    final Sound gruntSound;
 
     public SoundManager(AssetManager assetManager) {
         jumpingSound = assetManager.get( "soundfx/jumping.ogg", Sound.class);
         unlockSound = assetManager.get( "soundfx/unlock.ogg", Sound.class);
+        gruntSound = assetManager.get("soundfx/grunt.ogg", Sound.class);
     }
 
     void play(SoundId soundId){
@@ -19,6 +21,9 @@ public class SoundManager {
                 break;
             case UNLOCK:
                 unlockSound.play();
+                break;
+            case GRUNT:
+                gruntSound.play();
                 break;
             default:
                 // Unknown sound ID, could play a default sound or log an error
