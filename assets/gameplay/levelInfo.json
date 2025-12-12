@@ -15,7 +15,7 @@
       "levelNumber": 1,
       "scenarios": [
         {
-          "title": "Leaps of faith",
+          "title": "Leaps of faith...",
           "timeLimit": 30,
           "startingPositionX" : 20,
           "startingPositionY" : 700,
@@ -25,7 +25,21 @@
           },
           "baseLayer": {
             "matchingRow" : 14,
-            "cellStates" : [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0]
+            "cellStates" : [1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+          }
+        },
+        {
+          "title": "Jumps ahead!",
+          "timeLimit": 30,
+          "startingPositionX" : 20,
+          "startingPositionY" : 700,
+          "groundLayer": {
+            "matchingRow" : 9,
+            "cellStates" : [1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1]
+          },
+          "baseLayer": {
+            "matchingRow" : 14,
+            "cellStates" : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
           }
         }
       ]
@@ -40,7 +54,7 @@
           "startingPositionY" : 700,
           "groundLayer": {
             "matchingRow" : 9,
-            "cellStates" : [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1]
+            "cellStates" : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
           },
           "baseLayer": {
             "matchingRow" : 14,
