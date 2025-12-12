@@ -33,6 +33,7 @@ import com.pimpedpixel.games.systems.debug.ZebraDebugSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryJumpSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryDeathSystem;
 import com.pimpedpixel.games.systems.gameplay.HarryLevelStartSystem;
+import com.pimpedpixel.games.systems.gameplay.LevelProgressionSystem;
 import com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
@@ -155,6 +156,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         systemSet.add(new ActionSystem());
         systemSet.add(new ZebraStateSystem(jbumpWorld));
         systemSet.add(new RewardCollisionSystem(jbumpWorld, tileMap, "objects", harryOffsetX, harryWidth, harryHeight, ASSET_SCALE)); // Check reward collisions
+        systemSet.add(new LevelProgressionSystem(levelContainer, jbumpWorld, harryOffsetX, harryWidth, harryHeight)); // Handle level progression when treasure found
         systemSet.add(new BloodRenderSystem(spriteBatch, camera)); // Draw blood first (behind characters)
         systemSet.add(new CharacterRenderSystem(spriteBatch, camera));
 
@@ -260,6 +262,10 @@ public class Bridge2FarGame extends ApplicationAdapter {
         float zebraX = 400f; // Start at X position 400
         float zebraY = 120f;
         zebraFactory.createZebra(zebraX, zebraY);
+
+        // Initialize ScenarioState for the game
+        ScenarioState scenarioState = ScenarioState.getInstance();
+        scenarioState.printDebugState();
 
         // Start the first level (this will show scenario title and trigger level start logic)
         HarryLevelStartSystem levelStartSystem = artemisWorld.getSystem(HarryLevelStartSystem.class);
@@ -491,6 +497,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         HarryLevelStartSystem levelStartSystem = artemisWorld.getSystem(HarryLevelStartSystem.class);
         TimerSystem timerSystem = artemisWorld.getSystem(TimerSystem.class);
         HarryDeathSystem deathSystem = artemisWorld.getSystem(HarryDeathSystem.class);
+        LevelProgressionSystem levelProgressionSystem = artemisWorld.getSystem(LevelProgressionSystem.class);
         CharacterRenderSystem renderSystem = artemisWorld.getSystem(CharacterRenderSystem.class);
         BloodRenderSystem bloodRenderSystem = artemisWorld.getSystem(BloodRenderSystem.class);
 
@@ -509,6 +516,12 @@ public class Bridge2FarGame extends ApplicationAdapter {
                 // Set up blood factory for creating blood animations when Harry dies
                 BloodFactory bloodFactory = new BloodFactory(artemisWorld, assetManager);
                 deathSystem.setBloodFactory(bloodFactory);
+            }
+
+            // Set up level progression system
+            if (levelProgressionSystem != null) {
+                levelProgressionSystem.setLevelStartSystem(levelStartSystem);
+                levelProgressionSystem.setDeathSystem(deathSystem);
             }
 
             // Configure character render system from CharacterConfig

@@ -16,6 +16,9 @@ import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
 import com.pimpedpixel.games.systems.hud.TimerComponent;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
+import com.pimpedpixel.games.gameplay.ScenarioState;
+import com.pimpedpixel.games.gameplay.Level;
+import com.pimpedpixel.games.gameplay.Scenario;
 
 public class HarryDeathSystem extends IteratingSystem {
     public static final float DEFAULT_START_POSX = 20f;
@@ -113,7 +116,19 @@ public class HarryDeathSystem extends IteratingSystem {
                 return new float[]{DEFAULT_START_POSX, DEFAULT_START_POSY};
             }
 
-            Scenario scenario = currentLevel.getScenarios().get(0);
+            // Get the current scenario index from ScenarioState
+            ScenarioState scenarioState = ScenarioState.getInstance();
+            int scenarioIndex = scenarioState.getCurrentScenarioIndex();
+            
+            // Ensure scenario index is within bounds
+            if (scenarioIndex >= currentLevel.getScenarios().size()) {
+                scenarioIndex = 0; // Fallback to first scenario
+                scenarioState.setCurrentScenarioIndex(0);
+            }
+
+            Scenario scenario = currentLevel.getScenarios().get(scenarioIndex);
+            System.out.println("Using start position from scenario " + scenarioIndex + ": (" + 
+                scenario.getStartingPositionX() + ", " + scenario.getStartingPositionY() + ")");
             return new float[]{scenario.getStartingPositionX(), scenario.getStartingPositionY()};
         } catch (Exception e) {
             System.err.println("Error getting scenario start position: " + e.getMessage());
@@ -202,6 +217,28 @@ public class HarryDeathSystem extends IteratingSystem {
 
             // After 1 second in DIED state, revive Harry to RESTING state
             if (stateComp.stateTime >= DIED_DURATION) {
+                // Record death location in ScenarioState
+                ScenarioState scenarioState = ScenarioState.getInstance();
+                scenarioState.recordDeath(transformComp.x, transformComp.y);
+                
+                // Implement scenario rotation on death
+                Level currentLevel = levelContainer.getLevels()[currentLevelIndex];
+                if (currentLevel != null && !currentLevel.getScenarios().isEmpty()) {
+                    ScenarioState.LevelScenarioData levelData = scenarioState.getCurrentLevelScenarioData();
+                    if (levelData != null) {
+                        
+                        // Rotate to next scenario
+                        int currentScenarioRotationIndex = levelData.getCurrentScenarioRotationIndex();
+                        int nextScenarioIndex = (currentScenarioRotationIndex + 1) % currentLevel.getScenarios().size();
+                        levelData.setCurrentScenarioRotationIndex(nextScenarioIndex);
+                        
+                        // Update current scenario index
+                        scenarioState.setCurrentScenarioIndex(nextScenarioIndex);
+                        
+                        System.out.println("Rotating to next scenario: " + nextScenarioIndex + "/" + currentLevel.getScenarios().size());
+                    }
+                }
+                
                 stateComp.state = HarryState.RESTING;
                 stateComp.stateTime = 0f; // Reset state time
 
@@ -217,13 +254,15 @@ public class HarryDeathSystem extends IteratingSystem {
                     }
                 }
 
-                // Show scenario title when Harry revives
+                // Show scenario title when Harry revives (use current scenario from rotation)
                 if (timerSystem != null && levelContainer != null && currentLevelIndex >= 0 && currentLevelIndex < levelContainer.getLevels().length) {
-                    Level currentLevel = levelContainer.getLevels()[currentLevelIndex];
-                    if (currentLevel != null && !currentLevel.getScenarios().isEmpty()) {
-                        Scenario scenario = currentLevel.getScenarios().get(0);
+                    Level level = levelContainer.getLevels()[currentLevelIndex];
+                    if (level != null && !level.getScenarios().isEmpty()) {
+                        int scenarioIndex = scenarioState.getCurrentScenarioIndex();
+                        Scenario scenario = level.getScenarios().get(scenarioIndex);
                         if (scenario != null && scenario.getTitle() != null && !scenario.getTitle().isEmpty()) {
                             timerSystem.showScenarioTitle(scenario.getTitle());
+                            System.out.println("Showing scenario title: " + scenario.getTitle());
                         }
                     }
                 }

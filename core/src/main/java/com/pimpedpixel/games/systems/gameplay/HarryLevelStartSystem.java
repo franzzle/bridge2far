@@ -7,6 +7,7 @@ import com.badlogic.gdx.Gdx;
 import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
+import com.pimpedpixel.games.gameplay.ScenarioState;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.hud.TimerComponent;
@@ -43,6 +44,13 @@ public class HarryLevelStartSystem extends IteratingSystem {
     public void setTimerSystem(TimerSystem timerSystem) {
         this.timerSystem = timerSystem;
     }
+    
+    /**
+     * Set the current level index.
+     */
+    public void setCurrentLevelIndex(int levelIndex) {
+        this.currentLevelIndex = levelIndex;
+    }
 
     @Override
     protected void initialize() {
@@ -71,6 +79,18 @@ public class HarryLevelStartSystem extends IteratingSystem {
         if (levelContainer == null || levelContainer.getLevels() == null || levelContainer.getLevels().length == 0) {
             log("No levels available");
             return;
+        }
+
+        // Initialize ScenarioState for this level
+        ScenarioState scenarioState = ScenarioState.getInstance();
+        scenarioState.initializeLevel(currentLevelIndex);
+        scenarioState.resetTreasureFoundFlag();
+        
+        // Set initial scenario index
+        Level currentLevel = levelContainer.getLevels()[currentLevelIndex];
+        if (currentLevel != null && !currentLevel.getScenarios().isEmpty()) {
+            scenarioState.setCurrentScenarioIndex(0); // Start with first scenario
+            currentScenarioIndex = 0;
         }
 
         log("Starting level " + (currentLevelIndex + 1) + " for Harry");

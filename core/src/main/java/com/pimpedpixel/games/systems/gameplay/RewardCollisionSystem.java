@@ -13,6 +13,7 @@ import com.dongbat.jbump.World;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
+import com.pimpedpixel.games.gameplay.ScenarioState;
 
 /**
  * System for detecting collisions between Harry and reward objects.
@@ -67,6 +68,13 @@ public class RewardCollisionSystem extends IteratingSystem {
     }
 
     private void checkRewardCollisions(int entityId, TransformComponent transformComp, JbumpItemComponent jbumpItemComp) {
+        // Check if treasure was already found in this scenario (play sound only once)
+        ScenarioState scenarioState = ScenarioState.getInstance();
+        if (scenarioState.isTreasureFoundThisScenario()) {
+            System.out.println("Treasure already found in this scenario, skipping reward check.");
+            return;
+        }
+
         // Get the reward layer from the tile map
         MapLayer rewardLayer = tileMap.getLayers().get(rewardLayerName);
 
@@ -103,6 +111,10 @@ public class RewardCollisionSystem extends IteratingSystem {
                     // Check if Harry's bounding box overlaps with the reward object
                     if (harryBounds.overlaps(rewardBounds)) {
                         playUnlockSound(entityId);
+                        
+                        // Record treasure found in scenario state
+                        scenarioState.recordTreasureFound();
+                        
                         rewardCollected = true;
                         System.out.println("Harry collected reward! Playing unlock sound.");
                         break; // Only collect one reward at a time
