@@ -87,7 +87,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         // --- Level Loading ---
         levelLoader = new LevelLoader();
         try {
-            levelContainer = levelLoader.loadLevels("assets/gameplay/levelInfo.json");
+            levelContainer = levelLoader.loadLevels("gameplay/levelInfo.json");
             System.out.println("Loaded " + levelContainer.getLevels().length + " levels");
         } catch (Exception e) {
             System.err.println("Failed to load levels: " + e.getMessage());

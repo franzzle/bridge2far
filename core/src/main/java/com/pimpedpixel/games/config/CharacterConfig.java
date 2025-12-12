@@ -1,7 +1,8 @@
 package com.pimpedpixel.games.config;
 
-import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Json;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class CharacterConfig {
     public static synchronized CharacterConfig getInstance() {
         if (instance == null) {
             instance = new CharacterConfig();
-            instance.loadCharacters("assets/characters/characters.json");
+            instance.loadCharacters("characters/characters.json");
         }
         return instance;
     }
@@ -43,7 +44,7 @@ public class CharacterConfig {
      */
     public void loadCharacters(String filePath) {
         try {
-            FileHandle file = new FileHandle(filePath);
+            FileHandle file = Gdx.files.internal(filePath);
             if (file.exists()) {
                 Json json = new Json();
                 CharacterData[] characters = json.fromJson(CharacterData[].class, file);
@@ -75,7 +76,7 @@ public class CharacterConfig {
      * Useful for applying changes without restarting the application.
      */
     public void reload() {
-        loadCharacters("assets/characters/characters.json");
+        loadCharacters("characters/characters.json");
     }
     
     /**

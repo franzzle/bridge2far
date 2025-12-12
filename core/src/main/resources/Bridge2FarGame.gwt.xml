@@ -1,7 +1,6 @@
 <module>
     <source path="."/>
-    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games.systems"/>
-    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games.config"/>
-    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games.gameplay"/>
-    <extend-configuration-property name="artemis.reflect.include" value="com.pimpedpixel.games.systems"/>
+    <!-- Include all game packages so GWT keeps classes reachable via reflection (Artemis/Gdx). -->
+    <extend-configuration-property name="gdx.reflect.include" value="com.pimpedpixel.games"/>
+    <extend-configuration-property name="artemis.reflect.include" value="com.pimpedpixel.games"/>
 </module>

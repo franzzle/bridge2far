@@ -1,7 +1,8 @@
 package com.pimpedpixel.games.config;
 
-import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Json;
 
 /**
  * Singleton class for managing debug configuration loaded from debugconfig.json.
@@ -32,7 +33,7 @@ public class DebugConfig {
     public static synchronized DebugConfig getInstance() {
         if (instance == null) {
             instance = new DebugConfig();
-            instance.loadConfig("assets/config/debugconfig.json");
+            instance.loadConfig("config/debugconfig.json");
         }
         return instance;
     }
@@ -44,7 +45,7 @@ public class DebugConfig {
      */
     public void loadConfig(String filePath) {
         try {
-            FileHandle file = new FileHandle(filePath);
+            FileHandle file = Gdx.files.internal(filePath);
             if (file.exists()) {
                 Json json = new Json();
                 DebugConfigData configData = json.fromJson(DebugConfigData.class, file);
@@ -70,7 +71,7 @@ public class DebugConfig {
      * Useful for applying changes without restarting the application.
      */
     public void reload() {
-        loadConfig("assets/config/debugconfig.json");
+        loadConfig("config/debugconfig.json");
     }
     
     // Getters matching the property names in debugconfig.json
