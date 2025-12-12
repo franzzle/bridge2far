@@ -12,6 +12,7 @@ public class DebugConfig {
     
     // Singleton instance
     private static DebugConfig instance;
+    private static DebugConfigData cachedData;
     
     // Debug configuration properties (matching debugconfig.json)
     private boolean boundingboxes;
@@ -45,15 +46,19 @@ public class DebugConfig {
      */
     public void loadConfig(String filePath) {
         try {
-            FileHandle file = Gdx.files.internal(filePath);
-            if (file.exists()) {
-                Json json = new Json();
-                DebugConfigData configData = json.fromJson(DebugConfigData.class, file);
-                
-                // Copy values from the loaded data
+            // Prefer preloaded AssetManager data (GWT-friendly), fall back to direct file.
+            DebugConfigData configData = cachedData;
+            if (configData == null) {
+                FileHandle file = Gdx.files.internal(filePath);
+                if (file.exists()) {
+                    Json json = new Json();
+                    configData = json.fromJson(DebugConfigData.class, file);
+                }
+            }
+
+            if (configData != null) {
                 this.boundingboxes = configData.isBoundingboxes();
                 this.hidegroundlayer = configData.isHidegroundlayer();
-                
                 System.out.println("DebugConfig loaded successfully:");
                 System.out.println("  boundingboxes: " + this.boundingboxes);
                 System.out.println("  hidegroundlayer: " + this.hidegroundlayer);
@@ -115,7 +120,7 @@ public class DebugConfig {
     /**
      * Helper class to match the JSON structure in debugconfig.json.
      */
-    private static class DebugConfigData {
+    public static class DebugConfigData {
         private boolean boundingboxes;
         private boolean hidegroundlayer;
         

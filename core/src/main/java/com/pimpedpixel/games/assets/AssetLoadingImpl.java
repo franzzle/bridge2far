@@ -14,6 +14,10 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.pimpedpixel.games.GameInfo;
+import com.pimpedpixel.games.assets.DebugConfigAssetLoader.DebugConfigParameter;
+import com.pimpedpixel.games.assets.LevelContainerAssetLoader.LevelContainerParameter;
+import com.pimpedpixel.games.gameplay.LevelLoader;
+import com.pimpedpixel.games.config.DebugConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +40,8 @@ public class AssetLoadingImpl implements AssetLoading {
         initSoundFx();
         initBackgroundMusic();
         initBloodAnimation();
+        initLevelData();
+        initDebugConfig();
 
         assetManager.finishLoading();
     }
@@ -182,6 +188,23 @@ public class AssetLoadingImpl implements AssetLoading {
         } else {
             System.out.println("Blood animation file not found: " + bloodAtlasFile.path());
         }
+    }
+
+    // Preload level config JSON via AssetManager so GWT cache-busting paths are handled.
+    private void initLevelData() {
+        final String levelInfoPath = "gameplay/levelInfo.json";
+        assetManager.setLoader(LevelLoader.LevelContainer.class,
+            new LevelContainerAssetLoader(new InternalFileHandleResolver()));
+        assetManager.load(levelInfoPath, LevelLoader.LevelContainer.class, new LevelContainerParameter());
+        Gdx.app.log(this.getClass().getSimpleName(), "Preloading level info: " + levelInfoPath);
+    }
+
+    private void initDebugConfig() {
+        final String debugConfigPath = "config/debugconfig.json";
+        assetManager.setLoader(DebugConfig.DebugConfigData.class,
+            new DebugConfigAssetLoader(new InternalFileHandleResolver()));
+        assetManager.load(debugConfigPath, DebugConfig.DebugConfigData.class, new DebugConfigParameter());
+        Gdx.app.log(this.getClass().getSimpleName(), "Preloading debug config: " + debugConfigPath);
     }
 
     @Override

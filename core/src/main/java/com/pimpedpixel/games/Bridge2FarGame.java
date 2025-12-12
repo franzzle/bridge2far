@@ -58,7 +58,6 @@ public class Bridge2FarGame extends ApplicationAdapter {
     private GameInfo gameInfo;
     private OrthogonalTiledMapRenderer mapRenderer;
     private Viewport viewport;
-    private LevelLoader levelLoader;
     private LevelLoader.LevelContainer levelContainer;
 
     // --- NEW: Single Jbump World for all objects ---
@@ -85,9 +84,8 @@ public class Bridge2FarGame extends ApplicationAdapter {
         assetLoading.ready();
 
         // --- Level Loading ---
-        levelLoader = new LevelLoader();
         try {
-            levelContainer = levelLoader.loadLevels("gameplay/levelInfo.json");
+            levelContainer = assetManager.get("gameplay/levelInfo.json", LevelLoader.LevelContainer.class);
             System.out.println("Loaded " + levelContainer.getLevels().length + " levels");
         } catch (Exception e) {
             System.err.println("Failed to load levels: " + e.getMessage());
