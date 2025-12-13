@@ -8,6 +8,7 @@ import com.badlogic.gdx.Input;
 import com.dongbat.jbump.*;
 import com.pimpedpixel.games.systems.gameplay.PlaySoundComponent;
 import com.pimpedpixel.games.systems.gameplay.SoundId;
+import com.pimpedpixel.games.gameplay.LevelLoader;
 
 // New Jbump Imports
 
@@ -30,10 +31,9 @@ public class CharacterMovementSystem extends IteratingSystem {
     // Jbump World
     private final World jbumpWorld;
 
-    //TODO
-    private final float moveSpeed = 120f;
-    private final float jumpSpeed = 260f;
-    private final float gravity = -600f;
+    private final float moveSpeed;
+    private final float jumpSpeed;
+    private final float gravity;
 
     // Custom CollisionFilter for the character (standard platformer behavior)
     private final static CollisionFilter playerFilter = (item, other) -> Response.slide;
@@ -48,9 +48,22 @@ public class CharacterMovementSystem extends IteratingSystem {
     // The groundY field is no longer needed, as collision is handled by the Jbump world.
 
     public CharacterMovementSystem(World jbumpWorld) {
+        this(jbumpWorld, null);
+    }
+
+    public CharacterMovementSystem(World jbumpWorld, LevelLoader.SystemDefaults systemDefaults) {
         // Updated Aspect to include the JbumpItemComponent
         super(Aspect.all(TransformComponent.class, PhysicsComponent.class, HarryStateComponent.class, JbumpItemComponent.class));
         this.jbumpWorld = jbumpWorld;
+        if (systemDefaults != null) {
+            this.moveSpeed = systemDefaults.getMoveSpeed();
+            this.jumpSpeed = systemDefaults.getJumpSpeed();
+            this.gravity = systemDefaults.getGravity();
+        } else {
+            this.moveSpeed = 120f;
+            this.jumpSpeed = 260f;
+            this.gravity = -600f;
+        }
     }
 
     @Override

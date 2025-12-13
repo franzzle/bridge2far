@@ -170,7 +170,8 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
         // 3. Character movement & rendering
         // Use the single jbumpWorld instance
-        systemSet.add(new CharacterMovementSystem(jbumpWorld));
+        LevelLoader.SystemDefaults systemDefaults = levelContainer != null ? levelContainer.getSystemdefaults() : null;
+        systemSet.add(new CharacterMovementSystem(jbumpWorld, systemDefaults));
         systemSet.add(new JbumpActionSyncSystem(jbumpWorld)); // Sync jbump colliders for action-based movement (zebras)
         systemSet.add(new HarryDeathSequenceSystem(jbumpWorld));
         systemSet.add(new HarryDeathSystem(jbumpWorld));
