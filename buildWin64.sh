@@ -15,8 +15,8 @@ convert_version_to_vXXX() {
 HOME_DIR=$HOME
 
 # Define platform-specific variables
-JDK_FOLDER="jdk_windows64_Temurin8"
-JDK_ARCHIVE="OpenJDK8U-jdk_x64_windows_hotspot_8u382b05.zip"
+JDK_FOLDER="jdk_win_17"
+JDK_ARCHIVE="OpenJDK17U-jdk_x64_windows_hotspot_17.0.17_10.zip"
 ICON_FILE="icons/icon.ico"
 ASSETS_DIR="$PWD/desktop/build/resources/main/."
 
