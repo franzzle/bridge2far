@@ -42,8 +42,5 @@ public class ZebraShreddingSoundSystem extends IteratingSystem {
             StopSoundComponent stopSound = mStopSound.create(entityId);
             stopSound.soundId = SoundId.SHRED;
         }
-
-        zebraState.previousState = zebraState.state;
     }
 }
-

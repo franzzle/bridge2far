@@ -29,6 +29,7 @@ public class LevelProgressionSystem extends IteratingSystem {
     private HarryLevelStartSystem levelStartSystem;
     private HarryDeathSystem deathSystem;
     private LevelLoadingSystem levelLoadingSystem;
+    private boolean progressedForCurrentTreasure = false;
     
     public LevelProgressionSystem(LevelLoader.LevelContainer levelContainer, 
                                  World<Object> jbumpWorld, 
@@ -85,6 +86,16 @@ public class LevelProgressionSystem extends IteratingSystem {
     @Override
     protected void process(int entityId) {
         HarryStateComponent stateComp = mHarryState.get(entityId);
+
+        ScenarioState scenarioState = ScenarioState.getInstance();
+        if (!scenarioState.isTreasureFoundThisScenario()) {
+            progressedForCurrentTreasure = false;
+        } else if (!progressedForCurrentTreasure) {
+            System.out.println("LevelProgressionSystem: Treasure found, advancing immediately...");
+            checkForLevelProgression(entityId);
+            progressedForCurrentTreasure = true;
+            return;
+        }
         
         // Check if Harry is in RESTING state (after revival or level start)
         // This is where we check if treasure was found and handle level progression

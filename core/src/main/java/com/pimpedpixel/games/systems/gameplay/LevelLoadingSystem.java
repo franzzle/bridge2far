@@ -17,6 +17,8 @@ import com.pimpedpixel.games.systems.characters.PhysicsComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
 import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
+import com.pimpedpixel.games.systems.playfield.MapBackgroundRenderSystem;
+import com.pimpedpixel.games.systems.playfield.MapForegroundRenderSystem;
 
 import java.util.*;
 
@@ -131,6 +133,7 @@ public class LevelLoadingSystem extends BaseSystem {
         // Update system references
         if (levelStartSystem != null) {
             levelStartSystem.setCurrentLevelIndex(levelIndex);
+            levelStartSystem.setCurrentScenarioIndex(scenarioIndex);
         }
 
         if (deathSystem != null) {
@@ -142,7 +145,8 @@ public class LevelLoadingSystem extends BaseSystem {
 
         try {
             // Load the TMX map for this level
-            String mapName = "bridgefall_" + (levelIndex + 1); // Levels are 1-indexed in filenames
+            int levelNumber = levelContainer.getLevels()[levelIndex].getLevelNumber();
+            String mapName = "bridgefall_" + levelNumber;
             TiledMap newTileMap = loadBridgeFallMap(mapName);
 
             if (newTileMap == null) {
@@ -159,6 +163,8 @@ public class LevelLoadingSystem extends BaseSystem {
             // Apply scenario-specific modifications to the tilemap BEFORE rebuilding Jbump,
             // so the collision geometry reflects the updated tiles (holes, etc.).
             applyScenarioModifications(newTileMap, scenarioIndex);
+
+            updateSystemsForNewTileMap(newTileMap);
 
             // Reinitialize Jbump world for the new level based on the modified map
             initializeJbumpWorld(newTileMap);
@@ -366,6 +372,27 @@ public class LevelLoadingSystem extends BaseSystem {
         scenarioState.resetTreasureFoundFlag();
 
         System.out.println("Notified systems of level change to level " + currentLevelIndex + ", scenario " + currentScenarioIndex);
+    }
+
+    private void updateSystemsForNewTileMap(TiledMap newTileMap) {
+        if (artemisWorld == null || newTileMap == null) {
+            return;
+        }
+
+        MapBackgroundRenderSystem bg = artemisWorld.getSystem(MapBackgroundRenderSystem.class);
+        if (bg != null) {
+            bg.setMap(newTileMap);
+        }
+
+        MapForegroundRenderSystem fg = artemisWorld.getSystem(MapForegroundRenderSystem.class);
+        if (fg != null) {
+            fg.setMap(newTileMap);
+        }
+
+        RewardCollisionSystem reward = artemisWorld.getSystem(RewardCollisionSystem.class);
+        if (reward != null) {
+            reward.setTileMap(newTileMap);
+        }
     }
 
     /**

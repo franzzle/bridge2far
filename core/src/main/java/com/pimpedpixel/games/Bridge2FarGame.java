@@ -40,6 +40,7 @@ import com.pimpedpixel.games.systems.gameplay.LevelProgressionSystem;
 import com.pimpedpixel.games.systems.gameplay.RewardCollisionSystem;
 import com.pimpedpixel.games.systems.gameplay.SoundManager;
 import com.pimpedpixel.games.systems.gameplay.SoundSystem;
+import com.pimpedpixel.games.systems.gameplay.StateHistorySystem;
 import com.pimpedpixel.games.systems.gameplay.StopSoundSystem;
 import com.pimpedpixel.games.systems.gameplay.ZebraShreddingSoundSystem;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
@@ -210,6 +211,7 @@ public class Bridge2FarGame extends ApplicationAdapter {
         // 6. Gameplay Systems
         systemSet.add(new HarryLevelStartSystem(levelContainer));
         systemSet.add(new LevelLoadingSystem(jbumpWorld, levelContainer, harryOffsetX, harryWidth, harryHeight));
+        systemSet.add(new StateHistorySystem());
 
         // Convert Set to array for WorldConfigurationBuilder
         BaseSystem[] baseSystems = systemSet.toArray(new BaseSystem[0]);
@@ -282,6 +284,9 @@ public class Bridge2FarGame extends ApplicationAdapter {
 
         // Initialize ScenarioState for the game
         ScenarioState scenarioState = ScenarioState.getInstance();
+        scenarioState.initializeLevel(0);
+        scenarioState.setCurrentScenarioIndex(0);
+        scenarioState.resetTreasureFoundFlag();
         scenarioState.printDebugState();
 
         // Start the first level (this will show scenario title and trigger level start logic)

@@ -174,7 +174,6 @@ public class HarryDeathSystem extends IteratingSystem {
             if (mDeathSequence.has(entityId)) {
                 HarryDeathSequenceComponent seq = mDeathSequence.get(entityId);
                 if (seq != null && !seq.done) {
-                    stateComp.previousState = stateComp.state;
                     return;
                 }
             }
@@ -212,8 +211,6 @@ public class HarryDeathSystem extends IteratingSystem {
                 System.out.println("Harry resurrected at scenario start position: (" + newX + ", " + newY + ")");
             }
 
-            // Update previousState for next frame
-            stateComp.previousState = stateComp.state;
         }
         // Check if Harry is in DIED state
         else if (stateComp.state == HarryState.DIED) {
@@ -314,8 +311,6 @@ public class HarryDeathSystem extends IteratingSystem {
                 // Position is already set correctly, no need to update again
             }
 
-            // Update previousState for next frame
-            stateComp.previousState = stateComp.state;
         }
     }
 }

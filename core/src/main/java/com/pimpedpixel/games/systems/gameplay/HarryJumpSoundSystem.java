@@ -26,8 +26,5 @@ public class HarryJumpSoundSystem extends IteratingSystem {
             playSound.soundId = SoundId.JUMPING;   // Use enum for type safety
             // you can add extra fields like volume, pitch, etc.
         }
-
-        // IMPORTANT: update previousState *after* you’ve checked the transition
-        stateComp.previousState = stateComp.state;
     }
 }

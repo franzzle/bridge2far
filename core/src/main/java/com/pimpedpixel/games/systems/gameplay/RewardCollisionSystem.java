@@ -30,7 +30,7 @@ public class RewardCollisionSystem extends IteratingSystem {
     ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     private final World<Object> jbumpWorld;
-    private final TiledMap tileMap;
+    private TiledMap tileMap;
     private final String rewardLayerName;
     private final float harryOffsetX;
     private final float harryWidth;
@@ -50,6 +50,10 @@ public class RewardCollisionSystem extends IteratingSystem {
         this.harryWidth = harryWidth;
         this.harryHeight = harryHeight;
         this.assetScale = assetScale;
+    }
+
+    public void setTileMap(TiledMap tileMap) {
+        this.tileMap = tileMap;
     }
 
     @Override

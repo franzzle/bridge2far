@@ -81,18 +81,6 @@ public class HarryLevelStartSystem extends IteratingSystem {
             return;
         }
 
-        // Initialize ScenarioState for this level
-        ScenarioState scenarioState = ScenarioState.getInstance();
-        scenarioState.initializeLevel(currentLevelIndex);
-        scenarioState.resetTreasureFoundFlag();
-        
-        // Set initial scenario index
-        Level currentLevel = levelContainer.getLevels()[currentLevelIndex];
-        if (currentLevel != null && !currentLevel.getScenarios().isEmpty()) {
-            scenarioState.setCurrentScenarioIndex(0); // Start with first scenario
-            currentScenarioIndex = 0;
-        }
-
         log("Starting level " + (currentLevelIndex + 1) + " for Harry");
         levelStartPending = true;
     }
