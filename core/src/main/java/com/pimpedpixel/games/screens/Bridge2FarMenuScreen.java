@@ -38,13 +38,14 @@ public class Bridge2FarMenuScreen implements Screen {
     public void show() {
         spriteBatch = new SpriteBatch();
         font = new BitmapFont();
+        font.getData().setScale(DesignResolution.getFontScale());
         menuTexture = new Texture(Gdx.files.internal("menu/menu.png"));
 
-        camera = new OrthographicCamera(DesignResolution.WIDTH, DesignResolution.HEIGHT);
-        viewport = new FitViewport(DesignResolution.WIDTH, DesignResolution.HEIGHT, camera);
-        viewport.setScreenSize(DesignResolution.WIDTH, DesignResolution.HEIGHT);
+        camera = new OrthographicCamera(DesignResolution.getWidth(), DesignResolution.getHeight());
+        viewport = new FitViewport(DesignResolution.getWidth(), DesignResolution.getHeight(), camera);
+        viewport.setScreenSize(DesignResolution.getWidth(), DesignResolution.getHeight());
         viewport.apply(true);
-        camera.position.set(DesignResolution.WIDTH / 2f, DesignResolution.HEIGHT / 2f, 0f);
+        camera.position.set(DesignResolution.getWidth() / 2f, DesignResolution.getHeight() / 2f, 0f);
         camera.update();
 
         inputProcessor = new InputAdapter() {
@@ -101,7 +102,7 @@ public class Bridge2FarMenuScreen implements Screen {
         spriteBatch.begin();
         float drawX = 0f;
         float drawY = 0f;
-        spriteBatch.draw(menuTexture, drawX, drawY, DesignResolution.WIDTH, DesignResolution.HEIGHT);
+        spriteBatch.draw(menuTexture, drawX, drawY, DesignResolution.getWidth(), DesignResolution.getHeight());
         font.draw(spriteBatch, "Press SPACE to start", drawX + 40f, drawY + 80f);
         font.draw(spriteBatch, "Enter cheat code, then press ENTER", drawX + 40f, drawY + 50f);
         if (cheatCodeBuffer.length() > 0) {

@@ -3,6 +3,7 @@ package com.pimpedpixel.games;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.assets.AssetManager;
+import com.pimpedpixel.games.DesignResolution.Preset;
 import com.pimpedpixel.games.screens.Bridge2FarGameplayScreen;
 import com.pimpedpixel.games.screens.Bridge2FarMenuScreen;
 
@@ -12,11 +13,14 @@ import com.pimpedpixel.games.screens.Bridge2FarMenuScreen;
  */
 public class Bridge2FarGame extends Game {
 
+    private static final Preset DEFAULT_RESOLUTION = Preset.HD_1280x800;
+
     private AssetManager assetManager;
     private GameInfo gameInfo;
 
     @Override
     public void create() {
+        applyResolutionPreset();
         assetManager = new AssetManager();
         gameInfo = new GameInfo();
         setScreen(new Bridge2FarMenuScreen(this));
@@ -43,6 +47,18 @@ public class Bridge2FarGame extends Game {
         }
     }
 
+    /**
+     * Return to the main menu screen, disposing of the previous screen.
+     */
+    public void returnToMenu() {
+        Screen previous = getScreen();
+        Bridge2FarMenuScreen menuScreen = new Bridge2FarMenuScreen(this);
+        setScreen(menuScreen);
+        if (previous != null) {
+            previous.dispose();
+        }
+    }
+
     @Override
     public void dispose() {
         Screen current = getScreen();
@@ -52,5 +68,19 @@ public class Bridge2FarGame extends Game {
         if (assetManager != null) {
             assetManager.dispose();
         }
+    }
+
+    private void applyResolutionPreset() {
+        Preset preset = DEFAULT_RESOLUTION;
+        String override = System.getProperty("bridge2far.resolution");
+        if (override != null) {
+            for (Preset candidate : Preset.values()) {
+                if (candidate.name().equalsIgnoreCase(override)) {
+                    preset = candidate;
+                    break;
+                }
+            }
+        }
+        DesignResolution.applyPreset(preset);
     }
 }

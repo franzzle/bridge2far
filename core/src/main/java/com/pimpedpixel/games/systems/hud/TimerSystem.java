@@ -53,6 +53,7 @@ public class TimerSystem extends IteratingSystem {
     protected void initialize() {
         // Load C64 font
         c64Font = assetManager.get("font/c64.fnt", BitmapFont.class);
+        c64Font.getData().setScale(DesignResolution.getFontScale());
 
         // Create timer label
         Label.LabelStyle labelStyle = new Label.LabelStyle();
@@ -60,15 +61,15 @@ public class TimerSystem extends IteratingSystem {
 
         timerLabel = new Label(TIMER_PREFIX + "00:00", labelStyle);
         float timerX = 20f;
-        float timerY = DesignResolution.HEIGHT - timerLabel.getHeight();
+        float timerY = DesignResolution.getHeight() - timerLabel.getHeight();
         timerLabel.setPosition(timerX, timerY);
         timerLabel.setAlignment(Align.left);
 
         // Create scenario title label (centered horizontally, 75% from bottom, initially invisible)
         scenarioTitleLabel = new Label("", labelStyle);
         scenarioTitleLabel.setPosition(
-            (DesignResolution.WIDTH - scenarioTitleLabel.getWidth()) / 2,
-            DesignResolution.HEIGHT * 0.25f  // 25% from bottom = 75% from top
+            (DesignResolution.getWidth() - scenarioTitleLabel.getWidth()) / 2,
+            DesignResolution.getHeight() * 0.25f  // 25% from bottom = 75% from top
         );
         scenarioTitleLabel.setAlignment(Align.center);
         scenarioTitleLabel.setVisible(false);
@@ -216,8 +217,8 @@ public class TimerSystem extends IteratingSystem {
 
         // Position the label (centered horizontally, 75% from bottom)
         scenarioTitleLabel.setPosition(
-            (DesignResolution.WIDTH - scenarioTitleLabel.getWidth()) / 2,
-            DesignResolution.HEIGHT * 0.75f
+            (DesignResolution.getWidth() - scenarioTitleLabel.getWidth()) / 2,
+            DesignResolution.getHeight() * 0.75f
         );
 
         // Bring to front and make sure it's visible

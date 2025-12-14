@@ -5,10 +5,15 @@ import com.artemis.World;
 import com.artemis.WorldConfiguration;
 import com.artemis.WorldConfigurationBuilder;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapLayer;
@@ -25,6 +30,8 @@ import com.pimpedpixel.games.assets.AssetLoadingImpl;
 import com.pimpedpixel.games.config.CharacterConfig;
 import com.pimpedpixel.games.config.DebugConfig;
 import com.pimpedpixel.games.gameplay.*;
+import com.pimpedpixel.games.gameprogress.GameProgress;
+import com.pimpedpixel.games.gameprogress.PasswordCodec;
 import com.pimpedpixel.games.systems.characters.*;
 import com.pimpedpixel.games.systems.debug.ZebraDebugSystem;
 import com.pimpedpixel.games.systems.gameplay.*;
@@ -40,6 +47,7 @@ import static com.pimpedpixel.games.DesignResolution.ASSET_SCALE;
 
 public class Bridge2FarGameplayScreen implements Screen {
 
+    private final Bridge2FarGame game;
     private final AssetManager assetManager;
     private final GameInfo gameInfo;
     private final String cheatCode;
@@ -66,7 +74,16 @@ public class Bridge2FarGameplayScreen implements Screen {
     private float harryWidth = 20f;
     private float harryHeight = 64f;
 
+    private InputMultiplexer inputMultiplexer;
+    private InputAdapter gameplayInputProcessor;
+    private boolean showingPasswordPopup;
+    private String resumePassword = "";
+    private BitmapFont passwordFont;
+    private GlyphLayout glyphLayout = new GlyphLayout();
+    private ShapeRenderer overlayRenderer;
+
     public Bridge2FarGameplayScreen(Bridge2FarGame game, String cheatCode) {
+        this.game = game;
         this.assetManager = game.getAssetManager();
         this.gameInfo = game.getGameInfo();
         this.cheatCode = cheatCode;
@@ -77,6 +94,9 @@ public class Bridge2FarGameplayScreen implements Screen {
     public void show() {
         if (cheatCode != null && !cheatCode.isEmpty()) {
             Gdx.app.log("Bridge2FarGameplayScreen", "Cheat code applied: " + cheatCode);
+        }
+        if (inputMultiplexer != null) {
+            Gdx.input.setInputProcessor(inputMultiplexer);
         }
     }
 
@@ -99,11 +119,15 @@ public class Bridge2FarGameplayScreen implements Screen {
         spriteBatch = new SpriteBatch();
 
         // Use design resolution for camera/viewport
-        camera = new OrthographicCamera(DesignResolution.WIDTH, DesignResolution.HEIGHT);
-        viewport = new FitViewport(DesignResolution.WIDTH, DesignResolution.HEIGHT, camera);
-        viewport.setScreenSize(DesignResolution.WIDTH, DesignResolution.HEIGHT);
+        camera = new OrthographicCamera(DesignResolution.getWidth(), DesignResolution.getHeight());
+        viewport = new FitViewport(DesignResolution.getWidth(), DesignResolution.getHeight(), camera);
+        viewport.setScreenSize(DesignResolution.getWidth(), DesignResolution.getHeight());
 
         stage = new Stage(viewport, spriteBatch);
+        overlayRenderer = new ShapeRenderer();
+        passwordFont = assetManager.get("font/c64.fnt", BitmapFont.class);
+        passwordFont.getData().setScale(DesignResolution.getFontScale());
+        setupInputProcessing();
 
         // --- Load tilemap & create renderer BEFORE world config ---
         int currentLevelNumber = 1; // Default to level 1
@@ -505,6 +529,29 @@ public class Bridge2FarGameplayScreen implements Screen {
         }
     }
 
+    private void setupInputProcessing() {
+        gameplayInputProcessor = new InputAdapter() {
+            @Override
+            public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.ESCAPE) {
+                    if (!showingPasswordPopup) {
+                        showPasswordPopup();
+                    }
+                    return true;
+                }
+                if (showingPasswordPopup && keycode == Input.Keys.ENTER) {
+                    exitToMenu();
+                    return true;
+                }
+                return false;
+            }
+        };
+
+        inputMultiplexer = new InputMultiplexer();
+        inputMultiplexer.addProcessor(gameplayInputProcessor);
+        inputMultiplexer.addProcessor(stage);
+    }
+
     /**
      * Set up system dependencies after world creation.
      */
@@ -572,6 +619,67 @@ public class Bridge2FarGameplayScreen implements Screen {
         }
     }
 
+    private void showPasswordPopup() {
+        GameProgress progress = captureCurrentProgress();
+        resumePassword = PasswordCodec.encode(progress);
+        showingPasswordPopup = true;
+        Gdx.app.log("Bridge2FarGameplayScreen", "Generated resume password: " + resumePassword + " for " + progress);
+    }
+
+    private GameProgress captureCurrentProgress() {
+        ScenarioState scenarioState = ScenarioState.getInstance();
+        int levelIndex = Math.max(0, scenarioState.getCurrentLevelIndex());
+        int levelNumber = levelIndex + 1;
+        if (levelContainer != null && levelIndex < levelContainer.getLevels().length) {
+            Level level = levelContainer.getLevels()[levelIndex];
+            if (level != null) {
+                levelNumber = level.getLevelNumber();
+            }
+        }
+
+        ScenarioState.ScenarioAttemptData attemptData = scenarioState.getCurrentScenarioAttemptData();
+        int attempts = attemptData != null ? attemptData.getAttemptCount() : 0;
+        attempts = Math.max(0, Math.min(100_000, attempts));
+
+        levelNumber = Math.max(0, Math.min(255, levelNumber));
+        return new GameProgress(levelNumber, attempts);
+    }
+
+    private void exitToMenu() {
+        showingPasswordPopup = false;
+        game.returnToMenu();
+    }
+
+    private void drawPasswordPopup() {
+        if (overlayRenderer == null || passwordFont == null) {
+            return;
+        }
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        overlayRenderer.setProjectionMatrix(stage.getCamera().combined);
+        overlayRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        overlayRenderer.setColor(0f, 0f, 0f, 0.8f);
+        overlayRenderer.rect(0f, 0f, DesignResolution.getWidth(), DesignResolution.getHeight());
+        overlayRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        spriteBatch.setProjectionMatrix(stage.getCamera().combined);
+        spriteBatch.begin();
+        String line1 = "Use " + resumePassword + " to resume";
+        String line2 = "Good luck next time!";
+        glyphLayout.setText(passwordFont, line1);
+        float centerY = DesignResolution.getHeight() / 2f;
+        float line1X = (DesignResolution.getWidth() - glyphLayout.width) / 2f;
+        float line1Y = centerY + glyphLayout.height;
+        passwordFont.draw(spriteBatch, line1, line1X, line1Y);
+
+        glyphLayout.setText(passwordFont, line2);
+        float line2X = (DesignResolution.getWidth() - glyphLayout.width) / 2f;
+        float line2Y = centerY - glyphLayout.height;
+        passwordFont.draw(spriteBatch, line2, line2X, line2Y);
+        spriteBatch.end();
+    }
+
 
 
     @Override
@@ -581,11 +689,15 @@ public class Bridge2FarGameplayScreen implements Screen {
 
         camera.update();
 
-        artemisWorld.setDelta(delta);
+        float worldDelta = showingPasswordPopup ? 0f : delta;
+        artemisWorld.setDelta(worldDelta);
         artemisWorld.process();
-
-        stage.act(delta);
+        stage.act(showingPasswordPopup ? 0f : delta);
         stage.draw();
+
+        if (showingPasswordPopup) {
+            drawPasswordPopup();
+        }
     }
 
     @Override
@@ -603,12 +715,18 @@ public class Bridge2FarGameplayScreen implements Screen {
 
     @Override
     public void hide() {
+        if (inputMultiplexer != null && Gdx.input.getInputProcessor() == inputMultiplexer) {
+            Gdx.input.setInputProcessor(null);
+        }
     }
 
     @Override
     public void dispose() {
         artemisWorld.dispose();
         spriteBatch.dispose();
+        if (overlayRenderer != null) {
+            overlayRenderer.dispose();
+        }
         if (mapRenderer != null) {
             mapRenderer.dispose();
         }
