@@ -72,7 +72,7 @@ public class HarryFactory {
         // 4. STATE
         HarryStateComponent s = artemisWorld.edit(entityId).create(HarryStateComponent.class);
         s.state = HarryState.RESTING;
-        s.dir = Direction.LEFT;
+        s.dir = Direction.RIGHT;
         s.stateTime = 0f;
 
         // 5. ANIMATION

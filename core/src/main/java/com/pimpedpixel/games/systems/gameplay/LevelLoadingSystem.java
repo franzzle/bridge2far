@@ -7,7 +7,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.dongbat.jbump.World;
-import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
 import com.pimpedpixel.games.gameplay.*;
 import com.pimpedpixel.games.systems.characters.JbumpMapInitializationSystem;

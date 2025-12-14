@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
 import com.pimpedpixel.games.config.CharacterConfig;
 
