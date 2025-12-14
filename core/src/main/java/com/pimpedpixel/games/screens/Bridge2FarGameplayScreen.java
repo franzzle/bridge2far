@@ -50,7 +50,8 @@ public class Bridge2FarGameplayScreen implements Screen {
     private final Bridge2FarGame game;
     private final AssetManager assetManager;
     private final GameInfo gameInfo;
-    private final String cheatCode;
+    private final GameProgress resumeProgress;
+    private int startingLevelIndex = 0;
 
     private Stage stage;
     private World artemisWorld;
@@ -82,18 +83,18 @@ public class Bridge2FarGameplayScreen implements Screen {
     private GlyphLayout glyphLayout = new GlyphLayout();
     private ShapeRenderer overlayRenderer;
 
-    public Bridge2FarGameplayScreen(Bridge2FarGame game, String cheatCode) {
+    public Bridge2FarGameplayScreen(Bridge2FarGame game, GameProgress resumeProgress) {
         this.game = game;
         this.assetManager = game.getAssetManager();
         this.gameInfo = game.getGameInfo();
-        this.cheatCode = cheatCode;
+        this.resumeProgress = resumeProgress;
         initializeGameWorld();
     }
 
     @Override
     public void show() {
-        if (cheatCode != null && !cheatCode.isEmpty()) {
-            Gdx.app.log("Bridge2FarGameplayScreen", "Cheat code applied: " + cheatCode);
+        if (resumeProgress != null) {
+            Gdx.app.log("Bridge2FarGameplayScreen", "Resume progress applied: " + resumeProgress);
         }
         if (inputMultiplexer != null) {
             Gdx.input.setInputProcessor(inputMultiplexer);
@@ -109,11 +110,14 @@ public class Bridge2FarGameplayScreen implements Screen {
         // --- Level Loading ---
         try {
             levelContainer = assetManager.get("gameplay/levelInfo.json", LevelLoader.LevelContainer.class);
-            System.out.println("Loaded " + levelContainer.getLevels().length + " levels");
+            if (levelContainer != null) {
+                System.out.println("Loaded " + levelContainer.getLevels().length + " levels");
+            }
         } catch (Exception e) {
             System.err.println("Failed to load levels: " + e.getMessage());
             e.printStackTrace();
         }
+        startingLevelIndex = determineStartingLevelIndex();
 
         // --- Rendering basics ---
         spriteBatch = new SpriteBatch();
@@ -135,7 +139,7 @@ public class Bridge2FarGameplayScreen implements Screen {
         Scenario currentScenario = null;
 
         if (levelContainer != null && levelContainer.getLevels().length > 0) {
-            currentLevel = levelContainer.getLevels()[0]; // Get first level for now
+            currentLevel = levelContainer.getLevels()[startingLevelIndex];
             currentLevelNumber = currentLevel.getLevelNumber();
 
             // Get the first scenario for now
@@ -304,9 +308,12 @@ public class Bridge2FarGameplayScreen implements Screen {
 
         // Initialize ScenarioState for the game
         ScenarioState scenarioState = ScenarioState.getInstance();
-        scenarioState.initializeLevel(0);
+        scenarioState.initializeLevel(startingLevelIndex);
         scenarioState.setCurrentScenarioIndex(0);
         scenarioState.resetTreasureFoundFlag();
+        if (resumeProgress != null) {
+            scenarioState.seedAttemptCount(startingLevelIndex, 0, resumeProgress.getAttempts());
+        }
         scenarioState.printDebugState();
 
         // Start the first level (this will show scenario title and trigger level start logic)
@@ -552,6 +559,24 @@ public class Bridge2FarGameplayScreen implements Screen {
         inputMultiplexer.addProcessor(stage);
     }
 
+    private int determineStartingLevelIndex() {
+        if (levelContainer == null || levelContainer.getLevels() == null || levelContainer.getLevels().length == 0) {
+            return 0;
+        }
+        if (resumeProgress == null) {
+            return 0;
+        }
+        Level[] levels = levelContainer.getLevels();
+        for (int i = 0; i < levels.length; i++) {
+            if (levels[i] != null && levels[i].getLevelNumber() == resumeProgress.getLevel()) {
+                return i;
+            }
+        }
+        int fallbackIndex = resumeProgress.getLevel() - 1;
+        fallbackIndex = Math.max(0, Math.min(levels.length - 1, fallbackIndex));
+        return fallbackIndex;
+    }
+
     /**
      * Set up system dependencies after world creation.
      */
@@ -565,6 +590,14 @@ public class Bridge2FarGameplayScreen implements Screen {
         CharacterRenderSystem renderSystem = artemisWorld.getSystem(CharacterRenderSystem.class);
         BloodRenderSystem bloodRenderSystem = artemisWorld.getSystem(BloodRenderSystem.class);
 
+        if (levelStartSystem != null) {
+            if (resumeProgress != null) {
+                levelStartSystem.applyResumeProgress(resumeProgress, levelContainer);
+            } else {
+                levelStartSystem.setCurrentLevelIndex(startingLevelIndex);
+            }
+        }
+
         if (levelStartSystem != null && timerSystem != null) {
             levelStartSystem.setTimerSystem(timerSystem);
 
@@ -572,7 +605,7 @@ public class Bridge2FarGameplayScreen implements Screen {
             if (deathSystem != null) {
                 deathSystem.setTimerSystem(timerSystem);
                 deathSystem.setLevelContainer(levelContainer);
-                deathSystem.setCurrentLevelIndex(0); // Start with level 1 (index 0)
+                deathSystem.setCurrentLevelIndex(startingLevelIndex);
 
                 // Configure character data from CharacterConfig
                 deathSystem.setCharacterDataFromConfig(ASSET_SCALE);
@@ -684,6 +717,11 @@ public class Bridge2FarGameplayScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        if (artemisWorld == null || stage == null) {
+            Gdx.app.error("Bridge2FarGameplayScreen", "Artemis world not initialized, skipping render");
+            return;
+        }
+
         Gdx.gl.glClearColor(0, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 

@@ -62,6 +62,44 @@
           }
         }
       ]
+    },
+    {
+      "levelNumber": 4,
+      "scenarios": [
+        {
+          "title": "In God we Rust!",
+          "timeLimit": 15,
+          "startingPositionX" : 20,
+          "startingPositionY" : 700,
+          "groundLayer": {
+            "matchingRow" : 9,
+            "cellStates" : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+          },
+          "baseLayer": {
+            "matchingRow" : 14,
+            "cellStates" : [1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1]
+          }
+        }
+      ]
+    },
+    {
+      "levelNumber": 5,
+      "scenarios": [
+        {
+          "title": "Woody woodpecker!",
+          "timeLimit": 16,
+          "startingPositionX" : 20,
+          "startingPositionY" : 700,
+          "groundLayer": {
+            "matchingRow" : 9,
+            "cellStates" : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+          },
+          "baseLayer": {
+            "matchingRow" : 14,
+            "cellStates" : [1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1]
+          }
+        }
+      ]
     }
   ]
 }

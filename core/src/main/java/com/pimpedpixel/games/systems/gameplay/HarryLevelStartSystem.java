@@ -8,6 +8,7 @@ import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
 import com.pimpedpixel.games.gameplay.ScenarioState;
+import com.pimpedpixel.games.gameprogress.GameProgress;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.hud.TimerComponent;
@@ -29,6 +30,7 @@ public class HarryLevelStartSystem extends IteratingSystem {
     private int currentScenarioIndex = 0;
     private boolean levelStartPending = false;
     private float timerDecrementAmount = 1f; // Decrement timer by 1 second at level start
+    private int resumeAttempts = 0;
 
     // Reference to timer system to access timer component
     private TimerSystem timerSystem;
@@ -50,6 +52,30 @@ public class HarryLevelStartSystem extends IteratingSystem {
      */
     public void setCurrentLevelIndex(int levelIndex) {
         this.currentLevelIndex = levelIndex;
+    }
+
+    /**
+     * Apply resume progress decoded from a password.
+     */
+    public void applyResumeProgress(GameProgress progress, LevelLoader.LevelContainer levelContainer) {
+        if (progress == null || levelContainer == null || levelContainer.getLevels() == null || levelContainer.getLevels().length == 0) {
+            return;
+        }
+        int targetIndex = -1;
+        Level[] levels = levelContainer.getLevels();
+        for (int i = 0; i < levels.length; i++) {
+            Level level = levels[i];
+            if (level != null && level.getLevelNumber() == progress.getLevel()) {
+                targetIndex = i;
+                break;
+            }
+        }
+        if (targetIndex < 0) {
+            targetIndex = Math.max(0, Math.min(levels.length - 1, progress.getLevel() - 1));
+        }
+        setCurrentLevelIndex(targetIndex);
+        this.resumeAttempts = progress.getAttempts();
+        log("Applied resume progress -> level index " + targetIndex + " (level " + progress.getLevel() + "), attempts=" + resumeAttempts);
     }
 
     @Override
@@ -233,5 +259,9 @@ public class HarryLevelStartSystem extends IteratingSystem {
      */
     public float getTimerDecrementAmount() {
         return timerDecrementAmount;
+    }
+
+    public int getResumeAttempts() {
+        return resumeAttempts;
     }
 }

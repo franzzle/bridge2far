@@ -4,6 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.assets.AssetManager;
 import com.pimpedpixel.games.DesignResolution.Preset;
+import com.pimpedpixel.games.gameprogress.GameProgress;
 import com.pimpedpixel.games.screens.Bridge2FarGameplayScreen;
 import com.pimpedpixel.games.screens.Bridge2FarMenuScreen;
 
@@ -38,9 +39,9 @@ public class Bridge2FarGame extends Game {
      * Transition from the current screen to the gameplay screen, disposing
      * of the previous screen once the switch is complete.
      */
-    public void startGameplay(String cheatCode) {
+    public void startGameplay(GameProgress resumeProgress) {
         Screen previous = getScreen();
-        Bridge2FarGameplayScreen gameplayScreen = new Bridge2FarGameplayScreen(this, cheatCode);
+        Bridge2FarGameplayScreen gameplayScreen = new Bridge2FarGameplayScreen(this, resumeProgress);
         setScreen(gameplayScreen);
         if (previous != null) {
             previous.dispose();

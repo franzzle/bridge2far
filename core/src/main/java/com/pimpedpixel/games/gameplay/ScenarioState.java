@@ -98,6 +98,10 @@ public class ScenarioState {
         public int getAttemptCount() {
             return attemptCount;
         }
+
+        public void setAttemptCount(int attemptCount) {
+            this.attemptCount = Math.max(0, attemptCount);
+        }
         
         public boolean isTreasureFound() {
             return treasureFound;
@@ -226,6 +230,15 @@ public class ScenarioState {
      */
     public LevelScenarioData getCurrentLevelScenarioData() {
         return levelScenarioDataMap.get(currentLevelIndex);
+    }
+
+    /**
+     * Seed the attempt count for a given level and scenario (used when resuming via password).
+     */
+    public void seedAttemptCount(int levelIndex, int scenarioIndex, int attempts) {
+        LevelScenarioData levelData = levelScenarioDataMap.computeIfAbsent(levelIndex, k -> new LevelScenarioData());
+        ScenarioAttemptData scenarioData = levelData.getOrCreateScenarioAttempt(scenarioIndex);
+        scenarioData.setAttemptCount(Math.max(0, attempts));
     }
     
     /**

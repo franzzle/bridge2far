@@ -8,11 +8,15 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
+import com.pimpedpixel.games.gameprogress.GameProgress;
+import com.pimpedpixel.games.gameprogress.PasswordCodec;
 
 /**
  * Simple menu screen that displays the provided menu art, accepts cheat code input,
@@ -25,10 +29,15 @@ public class Bridge2FarMenuScreen implements Screen {
     private SpriteBatch spriteBatch;
     private Texture menuTexture;
     private BitmapFont font;
+    private GlyphLayout glyphLayout = new GlyphLayout();
+    private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
     private Viewport viewport;
     private InputAdapter inputProcessor;
     private final StringBuilder cheatCodeBuffer = new StringBuilder();
+    private String statusMessage;
+    private float statusMessageTimer;
+    private static final float STATUS_MESSAGE_DURATION = 3f;
 
     public Bridge2FarMenuScreen(Bridge2FarGame game) {
         this.game = game;
@@ -37,9 +46,10 @@ public class Bridge2FarMenuScreen implements Screen {
     @Override
     public void show() {
         spriteBatch = new SpriteBatch();
-        font = new BitmapFont();
+        font = new BitmapFont(Gdx.files.internal("font/c64.fnt"));
         font.getData().setScale(DesignResolution.getFontScale());
         menuTexture = new Texture(Gdx.files.internal("menu/menu.png"));
+        shapeRenderer = new ShapeRenderer();
 
         camera = new OrthographicCamera(DesignResolution.getWidth(), DesignResolution.getHeight());
         viewport = new FitViewport(DesignResolution.getWidth(), DesignResolution.getHeight(), camera);
@@ -83,21 +93,36 @@ public class Bridge2FarMenuScreen implements Screen {
     }
 
     private void startGameWithoutCheat() {
-        game.startGameplay("");
+        game.startGameplay(null);
     }
 
     private void startGameWithCheat(String cheatCode) {
-        Gdx.app.log("CheatCode", "Entered: " + (cheatCode == null ? "" : cheatCode));
-        game.startGameplay(cheatCode);
+        try {
+            GameProgress progress = PasswordCodec.decode(cheatCode);
+            Gdx.app.log("CheatCode", "Decoded progress: " + progress);
+            cheatCodeBuffer.setLength(0);
+            game.startGameplay(progress);
+        } catch (Exception ex) {
+            Gdx.app.log("CheatCode", "Invalid code: " + cheatCode + " (" + ex.getMessage() + ")");
+            showStatusMessage("Invalid password!");
+        }
+    }
+
+    private void showStatusMessage(String message) {
+        this.statusMessage = message;
+        this.statusMessageTimer = STATUS_MESSAGE_DURATION;
     }
 
     @Override
     public void render(float delta) {
+        updateStatus(delta);
+
         Gdx.gl.glClearColor(0, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         camera.update();
         spriteBatch.setProjectionMatrix(camera.combined);
+        drawCheatInputBackground();
 
         spriteBatch.begin();
         float drawX = 0f;
@@ -105,10 +130,65 @@ public class Bridge2FarMenuScreen implements Screen {
         spriteBatch.draw(menuTexture, drawX, drawY, DesignResolution.getWidth(), DesignResolution.getHeight());
         font.draw(spriteBatch, "Press SPACE to start", drawX + 40f, drawY + 80f);
         font.draw(spriteBatch, "Enter cheat code, then press ENTER", drawX + 40f, drawY + 50f);
-        if (cheatCodeBuffer.length() > 0) {
-            font.draw(spriteBatch, "Cheat: " + cheatCodeBuffer, drawX + 40f, drawY + 20f);
+        drawCheatInputText();
+        if (statusMessage != null) {
+            font.draw(spriteBatch, statusMessage, drawX + 40f, drawY + 120f);
         }
         spriteBatch.end();
+    }
+
+    private void drawCheatInputBackground() {
+        if (shapeRenderer == null) {
+            return;
+        }
+        float panelWidth = DesignResolution.getWidth() * 0.6f;
+        float panelHeight = 80f * DesignResolution.getFontScale();
+        float centerX = DesignResolution.getWidth() / 2f;
+        float centerY = DesignResolution.getHeight() * 0.2f; // 80% from top == 20% from bottom
+        float panelX = centerX - panelWidth / 2f;
+        float panelY = centerY - panelHeight / 2f;
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(0f, 0f, 0f, 0.75f);
+        shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
+        shapeRenderer.setColor(1f, 1f, 1f, 1f);
+        shapeRenderer.rectLine(panelX, panelY, panelX + panelWidth, panelY, 2f);
+        shapeRenderer.rectLine(panelX, panelY + panelHeight, panelX + panelWidth, panelY + panelHeight, 2f);
+        shapeRenderer.rectLine(panelX, panelY, panelX, panelY + panelHeight, 2f);
+        shapeRenderer.rectLine(panelX + panelWidth, panelY, panelX + panelWidth, panelY + panelHeight, 2f);
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    private void drawCheatInputText() {
+        String label = "Cheatcode : ";
+        String cheatValue = cheatCodeBuffer.length() > 0 ? cheatCodeBuffer.toString() : "";
+        glyphLayout.setText(font, label);
+        float labelWidth = glyphLayout.width;
+        float labelHeight = glyphLayout.height;
+        glyphLayout.setText(font, cheatValue);
+        float valueWidth = glyphLayout.width;
+
+        float centerX = DesignResolution.getWidth() / 2f;
+        float centerY = DesignResolution.getHeight() * 0.2f;
+        float totalWidth = labelWidth + valueWidth;
+        float baseX = centerX - totalWidth / 2f;
+        float textY = centerY + labelHeight / 2f;
+
+        font.draw(spriteBatch, label, baseX, textY);
+        font.draw(spriteBatch, cheatValue, baseX + labelWidth, textY);
+    }
+
+    private void updateStatus(float delta) {
+        if (statusMessageTimer > 0f) {
+            statusMessageTimer -= delta;
+            if (statusMessageTimer <= 0f) {
+                statusMessageTimer = 0f;
+                statusMessage = null;
+            }
+        }
     }
 
     @Override
@@ -141,6 +221,9 @@ public class Bridge2FarMenuScreen implements Screen {
         }
         if (font != null) {
             font.dispose();
+        }
+        if (shapeRenderer != null) {
+            shapeRenderer.dispose();
         }
     }
 }
