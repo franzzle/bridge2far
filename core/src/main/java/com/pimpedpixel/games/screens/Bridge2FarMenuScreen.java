@@ -132,9 +132,12 @@ public class Bridge2FarMenuScreen implements Screen {
         float drawY = 0f;
         spriteBatch.draw(menuTexture, drawX, drawY, DesignResolution.getWidth(), DesignResolution.getHeight());
         if (showPrompt) {
-            font.draw(spriteBatch, "Press SPACE to start", drawX + 40f, drawY + 80f);
+            String prompt = "Press SPACE to start";
+            glyphLayout.setText(font, prompt);
+            float promptX = (DesignResolution.getWidth() - glyphLayout.width) / 2f;
+            font.draw(spriteBatch, prompt, promptX, drawY + 80f);
         }
-        font.draw(spriteBatch, "Enter cheat code, then press ENTER", drawX + 40f, drawY + 50f);
+//        font.draw(spriteBatch, "Enter cheat code, then press ENTER", drawX + 40f, drawY + 50f);
         drawCheatInputText();
         if (statusMessage != null) {
             font.draw(spriteBatch, statusMessage, drawX + 40f, drawY + 120f);

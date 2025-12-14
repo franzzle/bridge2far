@@ -32,11 +32,14 @@ public class TimerSystem extends IteratingSystem {
 
     private Label timerLabel;
     private Label scenarioTitleLabel;
+    private Label attemptsLabel;
     private BitmapFont c64Font;
     private int currentEntity = -1;
     private EntitySubscription harrySubscription;
+    private int lastDisplayedAttemptCount = -1;
 
     private static final String TIMER_PREFIX = "TIME: ";
+    private static final String ATTEMPTS_PREFIX = "ATTEMPTS: ";
     private static final float SCENARIO_TITLE_DISPLAY_TIME = 2.0f; // 2 seconds
     private static final float SCENARIO_TITLE_FADE_TIME = 1.0f; // 1 second fade
 
@@ -65,6 +68,11 @@ public class TimerSystem extends IteratingSystem {
         timerLabel.setPosition(timerX, timerY);
         timerLabel.setAlignment(Align.left);
 
+        // Create attempts label (top-right)
+        attemptsLabel = new Label(ATTEMPTS_PREFIX + "0", labelStyle);
+        attemptsLabel.setAlignment(Align.right);
+        positionAttemptsLabel();
+
         // Create scenario title label (centered horizontally, 75% from bottom, initially invisible)
         scenarioTitleLabel = new Label("", labelStyle);
         scenarioTitleLabel.setPosition(
@@ -76,10 +84,12 @@ public class TimerSystem extends IteratingSystem {
 
         // Add to stage (HUD group)
         stage.addActor(timerLabel);
+        stage.addActor(attemptsLabel);
         stage.addActor(scenarioTitleLabel);
 
         // Create timer entity
         createTimerEntity();
+        updateAttemptsLabel();
 
         // Initialize entity subscription for Harry entities
         harrySubscription = world.getAspectSubscriptionManager().get(Aspect.all(HarryStateComponent.class));
@@ -131,6 +141,31 @@ public class TimerSystem extends IteratingSystem {
     private void updateTimerLabel(TimerComponent timer) {
         String formattedTime = timer.getFormattedTime();
         timerLabel.setText(TIMER_PREFIX + formattedTime);
+        updateAttemptsLabel();
+    }
+
+    private void updateAttemptsLabel() {
+        if (attemptsLabel == null) {
+            return;
+        }
+        ScenarioState scenarioState = ScenarioState.getInstance();
+        ScenarioState.ScenarioAttemptData attemptData = scenarioState.getCurrentScenarioAttemptData();
+        int attempts = attemptData != null ? Math.max(0, attemptData.getAttemptCount()) : 0;
+        if (attempts != lastDisplayedAttemptCount) {
+            lastDisplayedAttemptCount = attempts;
+            attemptsLabel.setText(ATTEMPTS_PREFIX + attempts);
+            positionAttemptsLabel();
+        }
+    }
+
+    private void positionAttemptsLabel() {
+        if (attemptsLabel == null) {
+            return;
+        }
+        float padding = 20f;
+        float attemptsX = DesignResolution.getWidth() - attemptsLabel.getWidth() - padding;
+        float attemptsY = DesignResolution.getHeight() - attemptsLabel.getHeight();
+        attemptsLabel.setPosition(attemptsX, attemptsY);
     }
 
     /**

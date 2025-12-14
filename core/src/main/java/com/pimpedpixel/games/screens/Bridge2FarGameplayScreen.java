@@ -142,7 +142,6 @@ public class Bridge2FarGameplayScreen implements Screen {
             currentLevel = levelContainer.getLevels()[startingLevelIndex];
             currentLevelNumber = currentLevel.getLevelNumber();
 
-            // Get the first scenario for now
             if (!currentLevel.getScenarios().isEmpty()) {
                 currentScenario = currentLevel.getScenarios().get(0);
             }
@@ -281,18 +280,23 @@ public class Bridge2FarGameplayScreen implements Screen {
             zebraFactory = new ZebraFactory(artemisWorld, jbumpWorld, 15f * ASSET_SCALE, 30f, 40f);
         }
 
-        // Create Harry entity with position from level data
+        // Create Harry entity with position from the current level data
         float startX = 0;
         float startY = 700f;
 
-        if (levelContainer != null && levelContainer.getLevels().length > 0) {
-            Level level = levelContainer.getLevels()[0];
-            if (!level.getScenarios().isEmpty()) {
-                Scenario scenario = level.getScenarios().get(0);
+        if (currentLevel != null && !currentLevel.getScenarios().isEmpty()) {
+            Scenario scenario = currentLevel.getScenarios().get(0);
+            startX = scenario.getStartingPositionX();
+            startY = scenario.getStartingPositionY();
+            System.out.println("Using level " + currentLevel.getLevelNumber() + " start position: (" + startX + ", " + startY + ")");
+        } else if (levelContainer != null && levelContainer.getLevels().length > 0) {
+            Level fallbackLevel = levelContainer.getLevels()[0];
+            if (!fallbackLevel.getScenarios().isEmpty()) {
+                Scenario scenario = fallbackLevel.getScenarios().get(0);
                 startX = scenario.getStartingPositionX();
                 startY = scenario.getStartingPositionY();
-                System.out.println("Using level start position: (" + startX + ", " + startY + ")");
             }
+            System.out.println("Using fallback start position: (" + startX + ", " + startY + ")");
         } else {
             System.out.println("Using default start position: (" + startX + ", " + startY + ")");
         }
