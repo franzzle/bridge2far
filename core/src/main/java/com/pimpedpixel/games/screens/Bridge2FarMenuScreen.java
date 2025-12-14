@@ -38,6 +38,9 @@ public class Bridge2FarMenuScreen implements Screen {
     private String statusMessage;
     private float statusMessageTimer;
     private static final float STATUS_MESSAGE_DURATION = 3f;
+    private static final float PROMPT_BLINK_INTERVAL = 0.5f;
+    private float promptBlinkTimer = 0f;
+    private boolean showPrompt = true;
 
     public Bridge2FarMenuScreen(Bridge2FarGame game) {
         this.game = game;
@@ -47,7 +50,7 @@ public class Bridge2FarMenuScreen implements Screen {
     public void show() {
         spriteBatch = new SpriteBatch();
         font = new BitmapFont(Gdx.files.internal("font/c64.fnt"));
-        font.getData().setScale(DesignResolution.getFontScale());
+        font.getData().setScale(DesignResolution.getFontScale() * 0.5f);
         menuTexture = new Texture(Gdx.files.internal("menu/menu.png"));
         shapeRenderer = new ShapeRenderer();
 
@@ -128,7 +131,9 @@ public class Bridge2FarMenuScreen implements Screen {
         float drawX = 0f;
         float drawY = 0f;
         spriteBatch.draw(menuTexture, drawX, drawY, DesignResolution.getWidth(), DesignResolution.getHeight());
-        font.draw(spriteBatch, "Press SPACE to start", drawX + 40f, drawY + 80f);
+        if (showPrompt) {
+            font.draw(spriteBatch, "Press SPACE to start", drawX + 40f, drawY + 80f);
+        }
         font.draw(spriteBatch, "Enter cheat code, then press ENTER", drawX + 40f, drawY + 50f);
         drawCheatInputText();
         if (statusMessage != null) {
@@ -188,6 +193,11 @@ public class Bridge2FarMenuScreen implements Screen {
                 statusMessageTimer = 0f;
                 statusMessage = null;
             }
+        }
+        promptBlinkTimer += delta;
+        if (promptBlinkTimer >= PROMPT_BLINK_INTERVAL) {
+            promptBlinkTimer -= PROMPT_BLINK_INTERVAL;
+            showPrompt = !showPrompt;
         }
     }
 

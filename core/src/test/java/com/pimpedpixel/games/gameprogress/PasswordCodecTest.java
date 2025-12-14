@@ -37,7 +37,7 @@ public class PasswordCodecTest {
 
     @Test
     public void encodeLevel3() {
-        GameProgress progress = new GameProgress(3, 3456);
+        GameProgress progress = new GameProgress(5, 3456);
         String cheat = PasswordCodec.encode(progress);
         System.out.println(cheat);
 
