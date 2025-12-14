@@ -41,7 +41,7 @@ if [[ -z "$ICON_FILE" ]]; then
 fi
 
 # Run Gradle tasks
-export JAVA_HOME="$HOME/Library/Java/JavaVirtualMachines/azul-1.8.0_362/Contents/Home"
+export JAVA_HOME="$HOME/Library/Java/JavaVirtualMachines/azul-17.0.6/Contents/Home"
 export PATH=$JAVA_HOME/bin:$PATH
 ./gradlew clean lwjgl3:dist
 
@@ -50,7 +50,7 @@ VERSION=$(cat overview/artifacts.json | jq -r '.version')
 V_VERSION=$(convert_version_to_vXXX "$VERSION")
 
 # Set output directory
-OUTPUT_NAME="$HOME_DIR/Development/GameDeployableDevelopment/pixelparody_win64_$V_VERSION"
+OUTPUT_NAME="$HOME_DIR/Development/GameDeployableDevelopment/bridge2far_win64_$V_VERSION"
 
 echo "Making the release with folder : $OUTPUT_NAME"
 # Remove existing output directory
@@ -63,7 +63,7 @@ java -jar "$HOME_DIR/Development/Tooling/packr/packr-all-4.0.0.jar" \
      --executable bridge2far \
      --classpath "$PWD/lwjgl3/build/libs/bridge2far-1.0.0.jar" \
      --removelibs "$PWD/lwjgl3/build/libs/bridge2far-1.0.0.jar" \
-     --mainclass com.franzzle.pixelparody.lwjgl3.lwjgl3Launcher \
+     --mainclass com.pimpedpixel.games.lwjgl3.Lwjgl3Launcher \
      --vmargs Xmx1G \
      --resources "$ASSETS_DIR" \
      --icon "$ICON_FILE" \
