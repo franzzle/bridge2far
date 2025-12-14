@@ -6,6 +6,9 @@ import com.artemis.systems.IteratingSystem;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.dongbat.jbump.*;
+import com.pimpedpixel.games.systems.gameplay.PlaySoundComponent;
+import com.pimpedpixel.games.systems.gameplay.SoundId;
+import com.pimpedpixel.games.gameplay.LevelLoader;
 
 // New Jbump Imports
 
@@ -18,6 +21,9 @@ public class CharacterMovementSystem extends IteratingSystem {
     private ComponentMapper<TransformComponent> mTransform;
     private ComponentMapper<PhysicsComponent> mPhysics;
     private ComponentMapper<HarryStateComponent> mState;
+    private ComponentMapper<ZebraStateComponent> mZebraState;
+    private ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
+    private ComponentMapper<PlaySoundComponent> mPlaySound;
 
     // New Mapper for Jbump Item
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
@@ -25,14 +31,13 @@ public class CharacterMovementSystem extends IteratingSystem {
     // Jbump World
     private final World jbumpWorld;
 
-    //TODO
-    private final float moveSpeed = 120f;
-    private final float jumpSpeed = 260f;
-    private final float gravity = -600f;
+    private final float moveSpeed;
+    private final float jumpSpeed;
+    private final float gravity;
 
     // Custom CollisionFilter for the character (standard platformer behavior)
     private final static CollisionFilter playerFilter = (item, other) -> Response.slide;
-    
+
     // Add static initializer to verify playerFilter is properly initialized
     static {
         if (playerFilter == null) {
@@ -43,9 +48,22 @@ public class CharacterMovementSystem extends IteratingSystem {
     // The groundY field is no longer needed, as collision is handled by the Jbump world.
 
     public CharacterMovementSystem(World jbumpWorld) {
+        this(jbumpWorld, null);
+    }
+
+    public CharacterMovementSystem(World jbumpWorld, LevelLoader.SystemDefaults systemDefaults) {
         // Updated Aspect to include the JbumpItemComponent
         super(Aspect.all(TransformComponent.class, PhysicsComponent.class, HarryStateComponent.class, JbumpItemComponent.class));
         this.jbumpWorld = jbumpWorld;
+        if (systemDefaults != null) {
+            this.moveSpeed = systemDefaults.getMoveSpeed();
+            this.jumpSpeed = systemDefaults.getJumpSpeed();
+            this.gravity = systemDefaults.getGravity();
+        } else {
+            this.moveSpeed = 120f;
+            this.jumpSpeed = 260f;
+            this.gravity = -600f;
+        }
     }
 
     @Override
@@ -55,13 +73,13 @@ public class CharacterMovementSystem extends IteratingSystem {
         PhysicsComponent p = mPhysics.get(entityId);
         HarryStateComponent s = mState.get(entityId);
         JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
-        
+
         // Add null checks for critical components to prevent crashes during level transitions
         if (t == null || p == null || s == null || jbumpItemComp == null || jbumpItemComp.item == null) {
             System.err.println("CharacterMovementSystem: Missing critical components for entity " + entityId + " during level transition");
             return;
         }
-        
+
         Item<Integer> item = jbumpItemComp.item;
 
         // Add null check for item
@@ -70,11 +88,23 @@ public class CharacterMovementSystem extends IteratingSystem {
             return;
         }
 
+        if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+            DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+            if (disabled != null && disabled.disabled) {
+                p.vx = 0;
+                p.vy = 0;
+                return;
+            }
+        }
+
         // Check if movement should be blocked for certain states
         boolean movementBlocked = s.state == HarryState.DIED ||
                                  s.state == HarryState.DYING ||
                                  s.state == HarryState.DIMINISHING ||
                                  s.state == HarryState.DIMINISHED;
+        // Track previous grounded state and whether we were falling to detect landings.
+        boolean wasOnGround = p.onGround;
+        boolean wasFalling = s.state == HarryState.FALLING;
 
         // --- INPUT ---
         boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT);
@@ -95,8 +125,11 @@ public class CharacterMovementSystem extends IteratingSystem {
 
         // Jump logic - only allow if not in blocked states
         if (jump && p.onGround && !movementBlocked) {
-            p.vy = jumpSpeed;
+            float jumpImpulse = p.onZebraSupport ? jumpSpeed * 3f : jumpSpeed;
+            p.vy = jumpImpulse;
             p.onGround = false;
+            p.onZebraSupport = false;
+            p.lethalJump = jumpImpulse > jumpSpeed; // track boosted jump
             s.state = HarryState.JUMPING;
             s.stateTime = 0f;
             s.justJumped = true; // Flag to indicate a jump has just occurred
@@ -121,39 +154,77 @@ public class CharacterMovementSystem extends IteratingSystem {
         }
 
         Response.Result result = jbumpWorld.move(item, newX, newY, playerFilter);
-        
+
         // Add null check for result
         if (result == null) {
             System.err.println("CharacterMovementSystem: Jbump move result is null");
             return;
         }
-        
+
         t.x = result.goalX;
         t.y = result.goalY;
 
         // Check for ground collision with null safety
         boolean touchedGround = false;
+        boolean landedOnZebra = false;
+        boolean lethalHeadHit = false;
         if (result.projectedCollisions != null) {
             for (int i = 0; i < result.projectedCollisions.size(); i++) {
                 Collision collision = result.projectedCollisions.get(i);
                 if (collision != null && collision.normal.y > 0.001f) {
                     touchedGround = true;
+                    Object otherUserData = collision.other != null ? collision.other.userData : null;
+                    if (otherUserData instanceof Integer) {
+                        int otherId = (Integer) otherUserData;
+                        if (mZebraState != null && mZebraState.has(otherId)) {
+                            landedOnZebra = true;
+                        }
+                    }
                     p.vy = 0;
                     break;
+                } else if (collision != null && collision.normal.y < -0.001f && p.lethalJump && p.vy > 0) {
+                    // Hitting a block above while in lethal (boosted) jump: check row 9
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Item<Object> otherItem = (Item<Object>) collision.other;
+                        if (otherItem != null) {
+                            Rect rect = jbumpWorld.getRect(otherItem);
+                            float h = rect.h;
+                            if (h > 0) {
+                                int row = Math.round(rect.y / h);
+                                if (row == 5) {
+                                    lethalHeadHit = true;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (ClassCastException ignored) {
+                    }
                 }
             }
+        }
+
+        // Kill immediately if lethal head hit on row 9 while moving upward.
+        if (lethalHeadHit) {
+            s.state = HarryState.DYING;
+            return;
         }
 
         // Update ground status
         if (touchedGround) {
             p.onGround = true;
+            p.onZebraSupport = landedOnZebra;
+            p.lethalJump = false; // landing clears lethal flag
             s.justJumped = false; // Reset the flag when landing
             if (Math.abs(p.vy) < 1f) {
                 p.vy = 0;
             }
         } else {
             p.onGround = false;
+            p.onZebraSupport = false;
         }
+
+        boolean landedThisFrame = !wasOnGround && touchedGround;
 
         // STATE MACHINE - only update states if not in blocked states
         if (!movementBlocked) {
@@ -179,6 +250,10 @@ public class CharacterMovementSystem extends IteratingSystem {
                 }
                 if(t.y < 130){
                     s.state = HarryState.DYING;
+                    if (landedThisFrame && wasFalling) {
+                        PlaySoundComponent playSound = mPlaySound.create(entityId);
+                        playSound.soundId = SoundId.BONEBREAK;
+                    }
                 }
             }
         }

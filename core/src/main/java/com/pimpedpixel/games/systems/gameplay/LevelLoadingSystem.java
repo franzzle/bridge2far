@@ -7,7 +7,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.dongbat.jbump.World;
-import com.pimpedpixel.games.Bridge2FarGame;
 import com.pimpedpixel.games.DesignResolution;
 import com.pimpedpixel.games.gameplay.*;
 import com.pimpedpixel.games.systems.characters.JbumpMapInitializationSystem;
@@ -15,7 +14,10 @@ import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.PhysicsComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
+import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.hud.TimerSystem;
+import com.pimpedpixel.games.systems.playfield.MapBackgroundRenderSystem;
+import com.pimpedpixel.games.systems.playfield.MapForegroundRenderSystem;
 
 import java.util.*;
 
@@ -35,6 +37,7 @@ public class LevelLoadingSystem extends BaseSystem {
     private ComponentMapper<JbumpItemComponent> mJbumpItem;
     private ComponentMapper<HarryStateComponent> mHarryState;
     private ComponentMapper<PhysicsComponent> mPhysics;
+    private ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     // Character dimensions for Harry (needed for Jbump collider setup)
     private final float harryOffsetX;
@@ -129,6 +132,7 @@ public class LevelLoadingSystem extends BaseSystem {
         // Update system references
         if (levelStartSystem != null) {
             levelStartSystem.setCurrentLevelIndex(levelIndex);
+            levelStartSystem.setCurrentScenarioIndex(scenarioIndex);
         }
 
         if (deathSystem != null) {
@@ -140,7 +144,8 @@ public class LevelLoadingSystem extends BaseSystem {
 
         try {
             // Load the TMX map for this level
-            String mapName = "bridgefall_" + (levelIndex + 1); // Levels are 1-indexed in filenames
+            int levelNumber = levelContainer.getLevels()[levelIndex].getLevelNumber();
+            String mapName = "bridgefall_" + levelNumber;
             TiledMap newTileMap = loadBridgeFallMap(mapName);
 
             if (newTileMap == null) {
@@ -157,6 +162,8 @@ public class LevelLoadingSystem extends BaseSystem {
             // Apply scenario-specific modifications to the tilemap BEFORE rebuilding Jbump,
             // so the collision geometry reflects the updated tiles (holes, etc.).
             applyScenarioModifications(newTileMap, scenarioIndex);
+
+            updateSystemsForNewTileMap(newTileMap);
 
             // Reinitialize Jbump world for the new level based on the modified map
             initializeJbumpWorld(newTileMap);
@@ -366,6 +373,27 @@ public class LevelLoadingSystem extends BaseSystem {
         System.out.println("Notified systems of level change to level " + currentLevelIndex + ", scenario " + currentScenarioIndex);
     }
 
+    private void updateSystemsForNewTileMap(TiledMap newTileMap) {
+        if (artemisWorld == null || newTileMap == null) {
+            return;
+        }
+
+        MapBackgroundRenderSystem bg = artemisWorld.getSystem(MapBackgroundRenderSystem.class);
+        if (bg != null) {
+            bg.setMap(newTileMap);
+        }
+
+        MapForegroundRenderSystem fg = artemisWorld.getSystem(MapForegroundRenderSystem.class);
+        if (fg != null) {
+            fg.setMap(newTileMap);
+        }
+
+        RewardCollisionSystem reward = artemisWorld.getSystem(RewardCollisionSystem.class);
+        if (reward != null) {
+            reward.setTileMap(newTileMap);
+        }
+    }
+
     /**
      * Move Harry's transform and jbump collider to the new scenario start position.
      */
@@ -421,6 +449,16 @@ public class LevelLoadingSystem extends BaseSystem {
                 p.vx = 0;
                 p.vy = 0;
                 p.onGround = false;
+            }
+
+            if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                if (disabled != null && disabled.disabled) {
+                    jbumpWorld.add((com.dongbat.jbump.Item) j.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                    mDisabledCollider.remove(entityId);
+                } else {
+                    mDisabledCollider.remove(entityId);
+                }
             }
 
             jbumpWorld.update(j.item, startX + harryOffsetX, startY, harryWidth, harryHeight);

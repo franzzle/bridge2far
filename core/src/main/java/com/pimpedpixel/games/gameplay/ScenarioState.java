@@ -13,6 +13,7 @@ public class ScenarioState {
     private int currentLevelIndex = 0;
     private int currentScenarioIndex = 0;
     private boolean treasureFoundThisScenario = false;
+    private boolean playedDeathGruntThisLevel = false;
     
     // Scenario tracking per level
     private Map<Integer, LevelScenarioData> levelScenarioDataMap = new HashMap<>();
@@ -97,6 +98,10 @@ public class ScenarioState {
         public int getAttemptCount() {
             return attemptCount;
         }
+
+        public void setAttemptCount(int attemptCount) {
+            this.attemptCount = Math.max(0, attemptCount);
+        }
         
         public boolean isTreasureFound() {
             return treasureFound;
@@ -137,9 +142,13 @@ public class ScenarioState {
      * Initialize or reset state for a new level
      */
     public void initializeLevel(int levelIndex) {
+        int previousLevelIndex = this.currentLevelIndex;
         this.currentLevelIndex = levelIndex;
         this.currentScenarioIndex = 0;
         this.treasureFoundThisScenario = false;
+        if (levelIndex != previousLevelIndex) {
+            this.playedDeathGruntThisLevel = false;
+        }
         
         // Initialize level data if not exists
         levelScenarioDataMap.computeIfAbsent(levelIndex, k -> new LevelScenarioData());
@@ -222,6 +231,15 @@ public class ScenarioState {
     public LevelScenarioData getCurrentLevelScenarioData() {
         return levelScenarioDataMap.get(currentLevelIndex);
     }
+
+    /**
+     * Seed the attempt count for a given level and scenario (used when resuming via password).
+     */
+    public void seedAttemptCount(int levelIndex, int scenarioIndex, int attempts) {
+        LevelScenarioData levelData = levelScenarioDataMap.computeIfAbsent(levelIndex, k -> new LevelScenarioData());
+        ScenarioAttemptData scenarioData = levelData.getOrCreateScenarioAttempt(scenarioIndex);
+        scenarioData.setAttemptCount(Math.max(0, attempts));
+    }
     
     /**
      * Increment scenario occurrences for current level
@@ -240,10 +258,19 @@ public class ScenarioState {
         currentLevelIndex++;
         currentScenarioIndex = 0;
         treasureFoundThisScenario = false;
+        playedDeathGruntThisLevel = false;
         totalLevelsUnlocked++;
         
         // Initialize new level data
         levelScenarioDataMap.computeIfAbsent(currentLevelIndex, k -> new LevelScenarioData());
+    }
+
+    public boolean hasPlayedDeathGruntThisLevel() {
+        return playedDeathGruntThisLevel;
+    }
+
+    public void markDeathGruntPlayedThisLevel() {
+        this.playedDeathGruntThisLevel = true;
     }
     
     /**

@@ -1,3 +1,6 @@
 jumping
 bonebreak
 unlock
+grunt
+dying
+shred

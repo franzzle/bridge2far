@@ -9,6 +9,7 @@ import com.pimpedpixel.games.gameplay.Level;
 import com.pimpedpixel.games.gameplay.LevelLoader;
 import com.pimpedpixel.games.gameplay.Scenario;
 import com.pimpedpixel.games.systems.characters.BloodFactory;
+import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.characters.Direction;
 import com.pimpedpixel.games.systems.characters.HarryState;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
@@ -26,6 +27,8 @@ public class HarryDeathSystem extends IteratingSystem {
     ComponentMapper<HarryStateComponent> mHarryState;
     ComponentMapper<TransformComponent> mTransform;
     ComponentMapper<JbumpItemComponent> mJbumpItem;
+    ComponentMapper<HarryDeathSequenceComponent> mDeathSequence;
+    ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     private final World<Object> jbumpWorld;
     private TimerSystem timerSystem; // Reference to timer system for resetting timer on revival
@@ -168,6 +171,13 @@ public class HarryDeathSystem extends IteratingSystem {
                 }
             }
 
+            if (mDeathSequence.has(entityId)) {
+                HarryDeathSequenceComponent seq = mDeathSequence.get(entityId);
+                if (seq != null && !seq.done) {
+                    return;
+                }
+            }
+
             stateComp.stateTime += world.getDelta();
 
             // After 2 seconds, transition to DIED state and reset position
@@ -184,13 +194,23 @@ public class HarryDeathSystem extends IteratingSystem {
                 transformComp.y = newY;
 
                 // Also update the Jbump item position
-                jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+                if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                    DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                    if (disabled != null && disabled.disabled) {
+                        disabled.x = newX + harryOffsetX;
+                        disabled.y = newY;
+                        disabled.w = harryWidth;
+                        disabled.h = harryHeight;
+                    } else {
+                        jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+                    }
+                } else {
+                    jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+                }
 
                 System.out.println("Harry resurrected at scenario start position: (" + newX + ", " + newY + ")");
             }
 
-            // Update previousState for next frame
-            stateComp.previousState = stateComp.state;
         }
         // Check if Harry is in DIED state
         else if (stateComp.state == HarryState.DIED) {
@@ -210,7 +230,19 @@ public class HarryDeathSystem extends IteratingSystem {
             transformComp.y = newY;
 
             // Also update the Jbump item position
-            jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+            if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                if (disabled != null && disabled.disabled) {
+                    disabled.x = newX + harryOffsetX;
+                    disabled.y = newY;
+                    disabled.w = harryWidth;
+                    disabled.h = harryHeight;
+                } else {
+                    jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+                }
+            } else {
+                jbumpWorld.update(jbumpItemComp.item, newX + harryOffsetX, newY, harryWidth, harryHeight);
+            }
 
             // Debug log for DIED state position updates
             System.out.println("Harry in DIED state - maintaining position at scenario start: (" + newX + ", " + newY + ")");
@@ -242,6 +274,15 @@ public class HarryDeathSystem extends IteratingSystem {
                 stateComp.state = HarryState.RESTING;
                 stateComp.stateTime = 0f; // Reset state time
 
+                if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+                    DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+                    if (disabled != null && disabled.disabled) {
+                        jbumpWorld.add((com.dongbat.jbump.Item) jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                        jbumpWorld.update(jbumpItemComp.item, disabled.x, disabled.y, disabled.w, disabled.h);
+                        mDisabledCollider.remove(entityId);
+                    }
+                }
+
                 // Reset timer when Harry revives and apply level start decrement
                 if (timerSystem != null) {
                     timerSystem.resetAndStartTimer(); // Reset to full time and start immediately
@@ -270,8 +311,6 @@ public class HarryDeathSystem extends IteratingSystem {
                 // Position is already set correctly, no need to update again
             }
 
-            // Update previousState for next frame
-            stateComp.previousState = stateComp.state;
         }
     }
 }

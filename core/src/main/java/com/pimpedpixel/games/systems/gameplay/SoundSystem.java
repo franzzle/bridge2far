@@ -18,9 +18,22 @@ public class SoundSystem extends IteratingSystem {
     protected void process(int entityId) {
         PlaySoundComponent comp = mPlaySound.get(entityId);
 
-        soundManager.play(comp.soundId);
+        if (!comp.started) {
+            if (comp.looping) {
+                soundManager.startLoop(comp.soundId);
+            } else {
+                soundManager.play(comp.soundId);
+            }
+            comp.started = true;
+        }
 
-        // one-shot: remove after playing
-        mPlaySound.remove(entityId);
+        if (comp.looping) {
+            return;
+        }
+
+        if (!comp.blocking || !soundManager.isPlaying(comp.soundId)) {
+            // one-shot (or finished blocking sound): remove after playing
+            mPlaySound.remove(entityId);
+        }
     }
 }

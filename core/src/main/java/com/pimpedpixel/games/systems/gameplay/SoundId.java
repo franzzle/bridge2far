@@ -6,5 +6,8 @@ package com.pimpedpixel.games.systems.gameplay;
  */
 public enum SoundId {
     JUMPING,    // soundfx/jumping.ogg
-    UNLOCK      // soundfx/unlock.ogg
+    UNLOCK,     // soundfx/unlock.ogg
+    GRUNT,      // soundfx/grunt.ogg
+    SHRED,      // soundfx/shred.ogg
+    BONEBREAK   // soundfx/bonebreak.ogg
 }

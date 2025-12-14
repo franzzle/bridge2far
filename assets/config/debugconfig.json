@@ -1,4 +1,4 @@
 {
-  "boundingboxes" : true,
+  "boundingboxes" : false,
   "hidegroundlayer" : false
 }

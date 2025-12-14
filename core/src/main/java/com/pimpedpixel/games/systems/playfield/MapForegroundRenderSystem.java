@@ -33,6 +33,11 @@ public class MapForegroundRenderSystem extends BaseSystem {
         resolveLayerIndices();
     }
 
+    public void setMap(TiledMap map) {
+        renderer.setMap(map);
+        resolveLayerIndices();
+    }
+
     private void resolveLayerIndices() {
         TiledMap map = renderer.getMap();
         MapLayers layers = map.getLayers();

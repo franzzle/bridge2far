@@ -9,7 +9,9 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.Rectangle;
 import com.dongbat.jbump.Item;
+import com.dongbat.jbump.Rect;
 import com.dongbat.jbump.World;
+import com.pimpedpixel.games.systems.characters.DisabledJbumpColliderComponent;
 import com.pimpedpixel.games.systems.characters.HarryStateComponent;
 import com.pimpedpixel.games.systems.characters.JbumpItemComponent;
 import com.pimpedpixel.games.systems.characters.TransformComponent;
@@ -25,9 +27,10 @@ public class RewardCollisionSystem extends IteratingSystem {
     ComponentMapper<TransformComponent> mTransform;
     ComponentMapper<JbumpItemComponent> mJbumpItem;
     ComponentMapper<PlaySoundComponent> mPlaySound;
+    ComponentMapper<DisabledJbumpColliderComponent> mDisabledCollider;
 
     private final World<Object> jbumpWorld;
-    private final TiledMap tileMap;
+    private TiledMap tileMap;
     private final String rewardLayerName;
     private final float harryOffsetX;
     private final float harryWidth;
@@ -49,11 +52,22 @@ public class RewardCollisionSystem extends IteratingSystem {
         this.assetScale = assetScale;
     }
 
+    public void setTileMap(TiledMap tileMap) {
+        this.tileMap = tileMap;
+    }
+
     @Override
     protected void process(int entityId) {
         HarryStateComponent stateComp = mHarryState.get(entityId);
         TransformComponent transformComp = mTransform.get(entityId);
         JbumpItemComponent jbumpItemComp = mJbumpItem.get(entityId);
+
+        if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {
+            DisabledJbumpColliderComponent disabled = mDisabledCollider.get(entityId);
+            if (disabled != null && disabled.disabled) {
+                return;
+            }
+        }
 
         // Check if we should reset the reward collected flag
         // Reset when Harry is in RESTING state (back at start position)
@@ -84,8 +98,12 @@ public class RewardCollisionSystem extends IteratingSystem {
             Item<Integer> harryItem = (Item<Integer>) jbumpItemComp.item;
 
             // Get the position from the Jbump world and use our stored dimensions
-            float x = jbumpWorld.getRect(harryItem).x;
-            float y = jbumpWorld.getRect(harryItem).y;
+            Rect rect = jbumpWorld.getRect(harryItem);
+            if (rect == null) {
+                return;
+            }
+            float x = rect.x;
+            float y = rect.y;
 
             // Create Harry's bounding box using the position from Jbump and our stored dimensions
             Rectangle harryBounds = new Rectangle(x, y, harryWidth, harryHeight);
