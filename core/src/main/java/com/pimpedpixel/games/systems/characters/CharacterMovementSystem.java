@@ -38,15 +38,6 @@ public class CharacterMovementSystem extends IteratingSystem {
     // Custom CollisionFilter for the character (standard platformer behavior)
     private final static CollisionFilter playerFilter = (item, other) -> Response.slide;
 
-    // Add static initializer to verify playerFilter is properly initialized
-    static {
-        if (playerFilter == null) {
-            System.err.println("CharacterMovementSystem: playerFilter initialization failed!");
-        }
-    }
-
-    // The groundY field is no longer needed, as collision is handled by the Jbump world.
-
     public CharacterMovementSystem(World jbumpWorld) {
         this(jbumpWorld, null);
     }
@@ -168,6 +159,7 @@ public class CharacterMovementSystem extends IteratingSystem {
         boolean touchedGround = false;
         boolean landedOnZebra = false;
         boolean lethalHeadHit = false;
+        boolean headBump = false;
         if (result.projectedCollisions != null) {
             for (int i = 0; i < result.projectedCollisions.size(); i++) {
                 Collision collision = result.projectedCollisions.get(i);
@@ -182,7 +174,8 @@ public class CharacterMovementSystem extends IteratingSystem {
                     }
                     p.vy = 0;
                     break;
-                } else if (collision != null && collision.normal.y < -0.001f && p.lethalJump && p.vy > 0) {
+                } else if (collision != null && collision.normal.y < -0.001f && p.vy > 0) {
+                    headBump = true;
                     // Hitting a block above while in lethal (boosted) jump: check row 9
                     try {
                         @SuppressWarnings("unchecked")
@@ -202,6 +195,11 @@ public class CharacterMovementSystem extends IteratingSystem {
                     }
                 }
             }
+        }
+
+        if (headBump) {
+            PlaySoundComponent playSound = mPlaySound.create(entityId);
+            playSound.soundId = SoundId.THUD;
         }
 
         // Kill immediately if lethal head hit on row 9 while moving upward.

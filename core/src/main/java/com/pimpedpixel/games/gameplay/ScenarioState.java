@@ -118,21 +118,16 @@ public class ScenarioState {
     public static class DeathLocation {
         private final float x;
         private final float y;
-        private final long timestamp;
-        
         public DeathLocation(float x, float y) {
             this.x = x;
             this.y = y;
-            this.timestamp = System.currentTimeMillis();
         }
         
         public float getX() { return x; }
         public float getY() { return y; }
-        public long getTimestamp() { return timestamp; }
-        
         @Override
         public String toString() {
-            return "DeathLocation{x=" + x + ", y=" + y + ", timestamp=" + timestamp + "}";
+            return "DeathLocation{x=" + x + ", y=" + y + "}";
         }
     }
     

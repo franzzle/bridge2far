@@ -7,27 +7,6 @@ public class DesignResolution {
     private static final int ASSET_BASE_HEIGHT = 400;
     private static final int FONT_BASE_WIDTH = 1280;
 
-    public enum Preset {
-        SD_640x400(640, 400),
-        HD_1280x800(1280, 800);
-
-        private final int width;
-        private final int height;
-
-        Preset(int width, int height) {
-            this.width = width;
-            this.height = height;
-        }
-
-        public int getWidth() {
-            return width;
-        }
-
-        public int getHeight() {
-            return height;
-        }
-    }
-
     private static final float CHARACTER_PIXEL_RATIO = 2f;
 
     public static boolean useDesign = true;
@@ -69,7 +48,5 @@ public class DesignResolution {
         return (float) Gdx.graphics.getHeight() / HEIGHT;
     }
 
-    static {
-        applyPreset(Preset.HD_1280x800);
-    }
+
 }

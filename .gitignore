@@ -1,6 +1,7 @@
 /packagingDmg/
 ## Gradle:
 .gradle/
+.gradle-user/
 gradle-app.setting
 /build/
 /android/build/

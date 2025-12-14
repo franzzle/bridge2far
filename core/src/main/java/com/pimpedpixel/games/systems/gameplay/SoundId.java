@@ -9,5 +9,6 @@ public enum SoundId {
     UNLOCK,     // soundfx/unlock.ogg
     GRUNT,      // soundfx/grunt.ogg
     SHRED,      // soundfx/shred.ogg
+    THUD,       // soundfx/thud.ogg
     BONEBREAK   // soundfx/bonebreak.ogg
 }

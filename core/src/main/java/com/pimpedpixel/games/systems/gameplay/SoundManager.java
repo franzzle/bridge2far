@@ -9,6 +9,7 @@ public class SoundManager {
     final Sound jumpingSound;
     final Sound unlockSound;
     final Sound bonebreakSound;
+    final Sound thudSound;
     final Music gruntMusic;
     final Music shredMusic;
 
@@ -16,6 +17,7 @@ public class SoundManager {
         jumpingSound = assetManager.get( "soundfx/jumping.ogg", Sound.class);
         unlockSound = assetManager.get( "soundfx/unlock.ogg", Sound.class);
         bonebreakSound = assetManager.get("soundfx/bonebreak.ogg", Sound.class);
+        thudSound = assetManager.get("soundfx/thud.ogg", Sound.class);
         gruntMusic = Gdx.audio.newMusic(Gdx.files.internal("soundfx/grunt.ogg"));
         shredMusic = Gdx.audio.newMusic(Gdx.files.internal("soundfx/shred.ogg"));
         shredMusic.setLooping(true);
@@ -39,6 +41,9 @@ public class SoundManager {
                 return;
             case BONEBREAK:
                 bonebreakSound.play();
+                return;
+            case THUD:
+                thudSound.play();
                 return;
             default:
                 // Unknown sound ID, could play a default sound or log an error

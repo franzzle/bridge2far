@@ -3,7 +3,6 @@ package com.pimpedpixel.games;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.assets.AssetManager;
-import com.pimpedpixel.games.DesignResolution.Preset;
 import com.pimpedpixel.games.gameprogress.GameProgress;
 import com.pimpedpixel.games.screens.Bridge2FarGameplayScreen;
 import com.pimpedpixel.games.screens.Bridge2FarMenuScreen;
@@ -72,16 +71,6 @@ public class Bridge2FarGame extends Game {
     }
 
     private void applyResolutionPreset() {
-        Preset preset = DEFAULT_RESOLUTION;
-        String override = System.getProperty("bridge2far.resolution");
-        if (override != null) {
-            for (Preset candidate : Preset.values()) {
-                if (candidate.name().equalsIgnoreCase(override)) {
-                    preset = candidate;
-                    break;
-                }
-            }
-        }
-        DesignResolution.applyPreset(preset);
+        DesignResolution.applyPreset(DEFAULT_RESOLUTION);
     }
 }

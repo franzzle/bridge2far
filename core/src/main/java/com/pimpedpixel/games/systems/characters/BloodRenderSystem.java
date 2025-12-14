@@ -21,12 +21,13 @@ public class BloodRenderSystem extends IteratingSystem {
 
     private final SpriteBatch batch;
     private final OrthographicCamera camera;
-    
+
     // Blood state durations
-    private static final float FLOWING_DURATION = 1.0f;    // 1 second flowing
-    private static final float DRYING_DURATION = 1.5f;    // 1.5 seconds drying
-    private static final float DRIED_DURATION = 5.0f;     // 5 seconds dried before removal
-    
+    // Let blood stick around longer to feel more visceral.
+    private static final float FLOWING_DURATION = 2.5f;    // used to be 1s
+    private static final float DRYING_DURATION = 16.0f;     // used to be 1.5s
+    private static final float DRIED_DURATION = 50.0f;     // used to be 5s
+
     // Blood scaling constants
     private static final float MAX_BLOOD_WIDTH = 128f;    // 2 cells × 64 pixels per cell
     private static final float BLOOD_SCALE_FACTOR = 0.5f; // Scale factor relative to character scale
@@ -60,7 +61,7 @@ public class BloodRenderSystem extends IteratingSystem {
 
         // Update blood state based on time
         anim.stateTime += world.getDelta();
-        
+
         // State transitions
         if (anim.state == BloodState.FLOWING && anim.stateTime >= FLOWING_DURATION) {
             anim.state = BloodState.DRYING;
@@ -92,7 +93,7 @@ public class BloodRenderSystem extends IteratingSystem {
 
         // Handle orientation flipping
         boolean flipX = (anim.orientation == Direction.RIGHT);
-        
+
         // Bottom-left anchor (blood should appear on the ground)
         if (flipX) {
             // Flip the blood horizontally for RIGHT orientation
