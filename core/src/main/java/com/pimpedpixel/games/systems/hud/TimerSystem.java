@@ -293,6 +293,7 @@ public class TimerSystem extends IteratingSystem {
 
             if (harryState != null) {
                 // Found Harry's entity, set his state to DYING
+                harryState.suppressBloodOnDeath = false;
                 harryState.state = HarryState.DYING;
                 harryState.stateTime = 0f; // Reset state time for clean death sequence
 

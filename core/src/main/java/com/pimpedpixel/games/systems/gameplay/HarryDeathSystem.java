@@ -162,12 +162,14 @@ public class HarryDeathSystem extends IteratingSystem {
                 // Use the orientation from when Harry started falling, or current orientation if not tracked
                 Direction bloodOrientation = (entityId == fallingHarryEntityId) ? fallingOrientation : stateComp.dir;
                 
-                // Create blood at Harry's current position when he starts dying
-                if (bloodFactory != null) {
-                    bloodFactory.createBlood(transformComp.x - 40, transformComp.y + 30, bloodOrientation);
-                    System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ") with orientation: " + bloodOrientation);
-                } else {
-                    System.err.println("Blood factory not set - cannot create blood animation");
+                // Create blood at Harry's current position when he starts dying unless suppressed
+                if (!stateComp.suppressBloodOnDeath) {
+                    if (bloodFactory != null) {
+                        bloodFactory.createBlood(transformComp.x - 40, transformComp.y + 30, bloodOrientation);
+                        System.out.println("Created blood at position: (" + transformComp.x + ", " + transformComp.y + ") with orientation: " + bloodOrientation);
+                    } else {
+                        System.err.println("Blood factory not set - cannot create blood animation");
+                    }
                 }
             }
 
@@ -272,6 +274,7 @@ public class HarryDeathSystem extends IteratingSystem {
                 }
                 
                 stateComp.state = HarryState.RESTING;
+                stateComp.suppressBloodOnDeath = false;
                 stateComp.stateTime = 0f; // Reset state time
 
                 if (mDisabledCollider != null && mDisabledCollider.has(entityId)) {

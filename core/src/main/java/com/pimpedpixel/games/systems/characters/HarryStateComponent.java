@@ -8,4 +8,5 @@ public class HarryStateComponent extends Component {
     public Direction dir = Direction.RIGHT;
     public float stateTime = 0f;
     public boolean justJumped;
+    public boolean suppressBloodOnDeath;
 }

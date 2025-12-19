@@ -204,6 +204,7 @@ public class CharacterMovementSystem extends IteratingSystem {
 
         // Kill immediately if lethal head hit on row 9 while moving upward.
         if (lethalHeadHit) {
+            s.suppressBloodOnDeath = true;
             s.state = HarryState.DYING;
             return;
         }
@@ -247,6 +248,7 @@ public class CharacterMovementSystem extends IteratingSystem {
                     s.state = HarryState.RESTING;
                 }
                 if(t.y < 130){
+                    s.suppressBloodOnDeath = false;
                     s.state = HarryState.DYING;
                     if (landedThisFrame && wasFalling) {
                         PlaySoundComponent playSound = mPlaySound.create(entityId);
